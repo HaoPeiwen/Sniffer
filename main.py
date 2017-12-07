@@ -24,7 +24,7 @@ class Parameter():
         self.NtwkIf = [] # 网卡列表
         self.packet = [] # 所有抓到包的二维列表
         self.showpacket = [] # 每次显示的一个包
-        self.filterlist = [] # 过滤后显示的包
+        self.filterlist = []
     
     def reinitial(self):
         self.RANK = 0  # 当前包最大索引数
@@ -62,20 +62,6 @@ def printDevices():
         sys.exit(-1)
 
 
-class FilterWindow(QtWidgets.QWidget):
-    def __init__(self, parent=None):
-        super(FilterWindow, self).__init__(parent)
-        self.resize(200, 200)
-        self.setStyleSheet("background: black")
-
-    def handle_click(self):
-        if not self.isVisible():
-            self.show()
-
-    def handle_close(self):
-        self.close()
-
-        
 class Ui_SnifferGUI(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
@@ -247,10 +233,9 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         self.comboBox.currentIndexChanged.connect(ChangeIface)
         self.treeWidget.itemClicked.connect(self.ShowDetails)
         self.pushButton_save.clicked.connect(self.SavePacket2File)
-        self.pushButton_return.clicked.connect(backsearch)
+        #self.pushButton_return.clicked.connect(backsearch)
+        self.pushButton_reassemble.clicked.connect(self.resembleFragments)
         QtCore.QMetaObject.connectSlotsByName(SnifferGUI)
-
-
 
     def retranslateUi(self, SnifferGUI):
         _translate = QtCore.QCoreApplication.translate
@@ -275,7 +260,7 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         self.treeWidget.headerItem().setText(5, _translate("SnifferGUI", "日期"))
         self.treeWidget.headerItem().setText(6, _translate("SnifferGUI", "时间"))
         self.treeWidget.headerItem().setText(7, _translate("SnifferGUI", "信息"))
-        #self.treeWidget.header().setSectionResizeMode(0, QtWidgets.QHeaderView.resizeSection(QHeaderView,10)) #锁定长度
+        # self.treeWidget.header().setSectionResizeMode(0, QtWidgets.QHeaderView.resizeSection(QHeaderView,10)) #锁定长度
         self.treeWidget.header().setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeToContents)
         self.treeWidget.header().setSectionResizeMode(4, QtWidgets.QHeaderView.ResizeToContents)
         self.treeWidget.header().setSectionResizeMode(5, QtWidgets.QHeaderView.ResizeToContents)
@@ -285,19 +270,26 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         __sortingEnabled = self.listWidget.isSortingEnabled()
         self.listWidget.setSortingEnabled(False)
         self.listWidget.setSortingEnabled(__sortingEnabled)
-        self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(self.tab_Ethernet), _translate("SnifferGUI", "Ethernet"))
+        self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(self.tab_Ethernet),
+                                          _translate("SnifferGUI", "Ethernet"))
         __sortingEnabled = self.listWidget_IP.isSortingEnabled()
         self.listWidget_IP.setSortingEnabled(False)
         self.listWidget_IP.setSortingEnabled(__sortingEnabled)
-        self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(self.tab_IP), _translate("SnifferGUI", "IP"))
+        self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(self.tab_IP),
+                                          _translate("SnifferGUI", "IP"))
         __sortingEnabled = self.listWidget_Protocol.isSortingEnabled()
         self.listWidget_Protocol.setSortingEnabled(False)
         self.listWidget_Protocol.setSortingEnabled(__sortingEnabled)
-        self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(self.tab_Protocol), _translate("SnifferGUI", "Protocol"))
-        self.tabWidget_Reassemble.setTabText(self.tabWidget_Reassemble.indexOf(self.tab_String), _translate("SnifferGUI", "String"))
-        self.tabWidget_Reassemble.setTabText(self.tabWidget_Reassemble.indexOf(self.tab_HEX), _translate("SnifferGUI", "<HEX重组>"))
-        self.tabWidget_Reassemble.setTabText(self.tabWidget_Reassemble.indexOf(self.tab_GBK), _translate("SnifferGUI", "<GBK编码>"))
-        self.tabWidget_Reassemble.setTabText(self.tabWidget_Reassemble.indexOf(self.tab_UTF8), _translate("SnifferGUI", "<UTF-8重组>"))
+        self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(self.tab_Protocol),
+                                          _translate("SnifferGUI", "Protocol"))
+        self.tabWidget_Reassemble.setTabText(self.tabWidget_Reassemble.indexOf(self.tab_String),
+                                             _translate("SnifferGUI", "String"))
+        self.tabWidget_Reassemble.setTabText(self.tabWidget_Reassemble.indexOf(self.tab_HEX),
+                                             _translate("SnifferGUI", "<HEX重组>"))
+        self.tabWidget_Reassemble.setTabText(self.tabWidget_Reassemble.indexOf(self.tab_GBK),
+                                             _translate("SnifferGUI", "<GBK编码>"))
+        self.tabWidget_Reassemble.setTabText(self.tabWidget_Reassemble.indexOf(self.tab_UTF8),
+                                             _translate("SnifferGUI", "<UTF-8重组>"))
         self.menu_files.setTitle(_translate("SnifferGUI", "文件"))
         self.menu_edit.setTitle(_translate("SnifferGUI", "编辑"))
         self.menu_tools.setTitle(_translate("SnifferGUI", "工具"))
@@ -337,81 +329,34 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
     def resembleFragments(self):
         # 首先分析哪些相关包能够重组
         ## Open the capture file
-        para.selectRANK = int(self.treeWidget.selectedItems()[0].text(0)) - 1
-        para.fp = pcap_open_offline("temp".encode("utf-8"), para.errbuf)
-        id = pktlis[pktindex][7]
-        if not bool(para.fp):
-            print("\n未找到缓存文件temp\n")
-        ## Retrieve the packets from the file
-        res = pcap_next_ex(para.fp, byref(para.header), byref(para.pkt_data))
-        while (res >= 0):
-            if (rank == para.selectRANK):
-                pcap_dump(para.DUMPFILE, para.header, para.pkt_data)
-                break
-            else:
-                rank += 1
-                res = pcap_next_ex(para.fp, byref(para.header), byref(para.pkt_data))
-        ##加工一下
-        # 用于存储每个数据头的列表
-        fragments = []
-        totallen = 34
-        # 每个列表是一个同包的列表，首个元素是对应的id ，然后是(pkt_data,header,数据偏移量)
-        while (res >= 0):
-            ## print pkt timestamp and pkt len
-            ##  Print the packet
-            a.append(create_string_buffer(para.header.contents.len))
-            protocol = "%.2x%.2x" % (para.pkt_data[12], para.pkt_data[13])
-            tmp = ""
-            tmp = tmp + "%.2x" % pkt_data[20]
-            tmp = tmp + "%.2x" % pkt_data[21]
-            tmp1 = int(tmp[0], 16)
-            ip_DF = (tmp1 // 4) % 2
-            ip_MF = (tmp1 // 2) % 2
-            ip_off = int(tmp[3:], 16)
-            thisid = "%.2x%.2x" % (para.pkt_data[18], para.pkt_data[19])
-            # 偏移量
-
-            if (protocol == '0800' and (ip_MF == 1 or ip_off > 0) and thisid == id):
-                fragments.append((create_string_buffer(para.header.contents.len), create_string_buffer(16), ip_off))
-                totallen += para.header.contents.len - 34
-                for i in range(1, para.header.contents.len + 1):
-                    fragments[-1][0][i - 1] = para.pkt_data[i - 1]
-                    # 拷贝数据到指定的内存段
-                for i in range(16):
-                    fragments[-1][1][i] = para.header[i]
-                    # 拷贝头部到指定的内存段
-
-            print("\n\n")
-            res = pcap_next_ex(para.fp, byref(para.header), byref(para.pkt_data))
-        # 读完包开始重拼
-        pktbuf = create_string_buffer(totallen)
-        # 存数据
-        headbuf = create_string_buffer(16)
-        # 存头部
-        PKTDATA = POINTER(c_ubyte)()
-        P1 = POINTER(c_ubyte)()
-        PKTDATA.contents = pktbuf
-        # 两个指针
-        fragments = sorted(fragments, key=lambda x: x[2])
-        P1.contents = fragments[0][0]
-        tmpoff = len(fragments[0][0])
-        for i in range(len(fragments[0][0])):
-            PKTDATA[i] = P1[i]
-            # 按偏移量重排
-        for frag in fragments[1:]:
-            P1.contents = frag[0]
-
-            for i in range(len(frag[0])):
-                PKTDATA[tmpoff + i] = P1[i]
-            tmpoff += len(frag[0])
+        pkt_index = int(self.treeWidget.selectedItems()[0].text(0))  -1 # 得到索引值
+        if self.lineEdit.text() == '':
+            id = para.packet[pkt_index][7]
+        else:
+            id = para.filterlist[pkt_index][7]
         PktDataHex = ""
-        PktDataUtf_8 = ""
-        for i in range(tmpoff):
-            PktDataHex = PktDataHex + "%.2x " % PKTDATA[i]
-        for i in range(tmpoff):
-            PktDataUtf_8 = PktDataASCII + chr(PKTDATA[i])
-        pcap_close(para.fp)
-        return [PktDataHex, PktDataUtf_8]
+        #print (id)
+        PktLst = []
+        PktDataANSI = ""
+        for packets in para.packet:
+            print ("")
+            if (len(packets)<8):
+                pass
+            elif ((packets[2] == "IPv4" )and (packets[7] == id )):
+                print(packets[7])
+                PktLst.append((packets[-3],packets[-4],packets[10]))
+        print (PktLst)
+        PktLst = sorted(PktLst, key=lambda x: int(x[2]))
+        ##加工一下
+        for fragments in PktLst:
+            print(fragments)
+            PktDataANSI = PktDataANSI + fragments[0][34:]
+            print('111')
+            PktDataHex = PktDataHex + fragments[1][102:]
+            print('222')
+        return [PktDataHex, PktDataANSI]
+        #print (PktDataHex)
+        #print (PktDataANSI)
 
     def AddIface(self): # 在列表中添加网卡名
         _translate = QtCore.QCoreApplication.translate
@@ -434,14 +379,19 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
 
         ShowString(pktlis, pktindex)  # 显示string
         # Ethernet 详细信息显示：
+
         self.listWidget.addItem(QtWidgets.QListWidgetItem())
         self.listWidget.item(0).setText(_translate("SnifferGUI", "目的MAC: " + pktlis[pktindex][0]))
+
 
         self.listWidget.addItem(QtWidgets.QListWidgetItem())
         self.listWidget.item(1).setText(_translate("SnifferGUI", "源MAC: " + pktlis[pktindex][1]))
 
+
         self.listWidget.addItem(QtWidgets.QListWidgetItem())
         self.listWidget.item(2).setText(_translate("SnifferGUI", "协议名: " + pktlis[pktindex][2]))
+
+
 
         if pktlis[pktindex][2] == 'ARP' :
             self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
@@ -520,7 +470,8 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
                     _translate("SnifferGUI", "信息:亲爱的" + pktlis[pktindex][10] + "你好！你的IP地址是" + pktlis[pktindex][11]))
 
         elif pktlis[pktindex][2] == 'IPv6':
-            #self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(self.tab_IP), _translate("SnifferGUI", "IPv6"))
+            self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
+                self.tab_IP), _translate("SnifferGUI", "IPv6"))
             self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
             self.listWidget_IP.item(0).setText(_translate(
                 "SnifferGUI", "IP协议版本: " + pktlis[pktindex][3]))
@@ -667,23 +618,25 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
                 "SnifferGUI", "选项: " + pktlis[pktindex][16]))
 
             ## 以上是IP包的字段，以下是ICMP包字段
-            self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
-                self.tab_Protocol), _translate("SnifferGUI", "ICMP"))
-            self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_Protocol.item(0).setText(
-                _translate("SnifferGUI", "操作类型: " + pktlis[pktindex][17]))
-            self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_Protocol.item(1).setText(
-                _translate("SnifferGUI", "具体操作: " + pktlis[pktindex][18]))
-            self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_Protocol.item(2).setText(
-                _translate("SnifferGUI", "ICMP校验和: " + pktlis[pktindex][19]))
-            self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_Protocol.item(3).setText(
-                _translate("SnifferGUI", "ID: " + str(pktlis[pktindex][20])))
-            self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_Protocol.item(4).setText(
-                _translate("SnifferGUI", "序列号: " + str(pktlis[pktindex][21])))
+
+            if (pktlis[pktindex][17] != "分片包"):
+                self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
+                    self.tab_Protocol), _translate("SnifferGUI", "ICMP"))
+                self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_Protocol.item(0).setText(
+                    _translate("SnifferGUI", "操作类型: " + pktlis[pktindex][17]))
+                self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_Protocol.item(1).setText(
+                    _translate("SnifferGUI", "具体操作: " + pktlis[pktindex][18]))
+                self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_Protocol.item(2).setText(
+                    _translate("SnifferGUI", "ICMP校验和: " + pktlis[pktindex][19]))
+                self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_Protocol.item(3).setText(
+                    _translate("SnifferGUI", "ID: " + str(pktlis[pktindex][20])))
+                self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_Protocol.item(4).setText(
+                    _translate("SnifferGUI", "序列号: " + str(pktlis[pktindex][21])))
 
         elif pktlis[pktindex][12] == 'UDP':
             self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
@@ -727,6 +680,7 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
                 "SnifferGUI", "选项: " + pktlis[pktindex][16]))
 
             ## 以上是IP包的字段，以下是UDP包字段
+
             self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
                 self.tab_Protocol), _translate("SnifferGUI", "UDP"))
             self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
@@ -799,18 +753,49 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
             self.listWidget_Protocol.item(3).setText(
                 _translate("SnifferGUI", "组地址: " + pktlis[pktindex][20]))
 
+        elif pktlis[pktindex][12] == '未定义的协议':
+            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+            self.listWidget_IP.item(0).setText(_translate(
+                "SnifferGUI", "IP协议版本: " + pktlis[pktindex][3]))
+            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+            self.listWidget_IP.item(1).setText(_translate(
+                "SnifferGUI", "IP包首部长度: " + str(pktlis[pktindex][4])))
+            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+            self.listWidget_IP.item(2).setText(_translate(
+                "SnifferGUI", "服务类型: " + pktlis[pktindex][5]))
+            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+            self.listWidget_IP.item(3).setText(_translate(
+                "SnifferGUI", "IP包总长度: " + str(pktlis[pktindex][6])))
+            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+            self.listWidget_IP.item(4).setText(_translate(
+                "SnifferGUI", "标识: " + pktlis[pktindex][7]))
+            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+            self.listWidget_IP.item(5).setText(_translate(
+                "SnifferGUI", "禁止分片: " + (pktlis[pktindex][8] == 1 and "是" or "否")))
+            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+            self.listWidget_IP.item(6).setText(_translate(
+                "SnifferGUI", "更多分片: " + (pktlis[pktindex][9] == 1 and "是" or "否")))
+            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+            self.listWidget_IP.item(7).setText(_translate(
+                "SnifferGUI", "片内偏移: " + pktlis[pktindex][10]))
+            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+            self.listWidget_IP.item(8).setText(_translate(
+                "SnifferGUI", "生存时间: " + pktlis[pktindex][11]))
+            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+            self.listWidget_IP.item(9).setText(_translate(
+                "SnifferGUI", "首部校验和: " + pktlis[pktindex][13]))
+            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+            self.listWidget_IP.item(10).setText(_translate(
+                "SnifferGUI", "源IP: " + pktlis[pktindex][14]))
+            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+            self.listWidget_IP.item(11).setText(_translate(
+                "SnifferGUI", "目的IP: " + pktlis[pktindex][15]))
+            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+            self.listWidget_IP.item(12).setText(_translate(
+                "SnifferGUI", "选项: " + pktlis[pktindex][16]))
+
         else:
             pass
-
-
-def backsearch():
-    ui.treeWidget.clear()
-    ui.lineEdit.clear()
-    i = 0
-    for pkt in para.packet:
-        displaygui(list_to_display(pkt, i + 1), i)
-        i += 1
-
 
 def SniffStop():
     para.ListenFlag = 0
@@ -872,8 +857,7 @@ def list_to_display(lista,Num):  # 显示上面窗口的src，dst，prt，len等
     listdisplay = []
     if lista[2] in ['ARP','RARP']:
         listdisplay = [str(lista[i]) for i in [9, 11, 2]]
-        listdisplay[-1] = ' '+listdisplay[-1]+' '
-        listdisplay.append(' '+lista[-1]+' ')  # 长度
+        listdisplay.append(lista[-1])  # 长度
         listdisplay.append(lista[-2][:11]) # 日期
         listdisplay.append(lista[-2][11:24])  # 时间
         if lista[7] == "RARP请求":
@@ -887,27 +871,42 @@ def list_to_display(lista,Num):  # 显示上面窗口的src，dst，prt，len等
 
     elif lista[2] == 'IPv6':
         listdisplay = [str(lista[i]) for i in [9, 10, 2]]
-        listdisplay[-1] = ' ' + listdisplay[-1] + ' '
-        listdisplay.append(' ' + lista[-1] + ' ')  # 长度
+        listdisplay.append(lista[-1])  # 长度
         listdisplay.append(lista[-2][:11])  # 日期
         listdisplay.append(lista[-2][11:24])  # 时间
         listdisplay.append(lista[9] + "->" +lista[10])
     else:
         if len(lista)>12:
-            if lista[12] in ['TCP', 'UDP']:
+            if lista[12] == 'UDP':
                 listdisplay = [str(lista[i]) for i in [14, 15, 12]]
-                listdisplay[-1] = ' ' + listdisplay[-1] + ' '
-                listdisplay.append(' ' + lista[-1] + ' ')  # 长度
+                listdisplay.append(lista[-1])  # 长度
                 listdisplay.append(lista[-2][:11])  # 日期
                 listdisplay.append(lista[-2][11:24])  # 时间
                 listdisplay.append(lista[14] +":"+str(lista[17])+"->"+lista[15]+":"+str(lista[18]))
-            elif lista[12] in ['IGMP', 'ICMP']:
+            elif lista[12] == 'TCP':
                 listdisplay = [str(lista[i]) for i in [14, 15, 12]]
-                listdisplay[-1] = ' ' + listdisplay[-1] + ' '
-                listdisplay.append(' ' + lista[-1] + ' ')  # 长度
+                listdisplay.append(lista[-1])  # 长度
                 listdisplay.append(lista[-2][:11])  # 日期
                 listdisplay.append(lista[-2][11:24])  # 时间
-                listdisplay.append('ICMP&IGMP')
+                listdisplay.append(str(lista[17])+"->"+str(lista[18])+"   Seq=" + str(lista[19]) +"  Ack=" + str(lista[20]))
+            elif lista[12]  =='IGMP':
+                listdisplay = [str(lista[i]) for i in [14, 15, 12]]
+                listdisplay.append(lista[-1])  # 长度
+                listdisplay.append(lista[-2][:11])  # 日期
+                listdisplay.append(lista[-2][11:24])  # 时间
+                listdisplay.append('IGMP')
+            elif lista[12] == 'ICMP' and lista[17]!= '分片包':
+                listdisplay = [str(lista[i]) for i in [14, 15, 12]]
+                listdisplay.append(lista[-1])  # 长度
+                listdisplay.append(lista[-2][:11])  # 日期
+                listdisplay.append(lista[-2][11:24])  # 时间
+                listdisplay.append(lista[17] + ":" + lista[18])
+            elif lista[12] == 'ICMP' and lista[17]== '分片包':
+                listdisplay = [str(lista[i]) for i in [14, 15, 12]]
+                listdisplay.append(lista[-1])  # 长度
+                listdisplay.append(lista[-2][:11])  # 日期
+                listdisplay.append(lista[-2][11:24])  # 时间
+                listdisplay.append('ICMP分片')
             else :
                 listdisplay = ['无法识别', '', '']
                 listdisplay.append(lista[-1])  # 长度
@@ -938,6 +937,7 @@ def threadlisten(): #开启一个线程抓包
         para.ListenFlag = 1
         Process.start()
         
+
 #抓包函数
 def ListenDevice():
     para.RANK = 0
@@ -956,6 +956,9 @@ def ListenDevice():
             para.packet.append(para.showpacket)
             #packet为格式化的包
             #下一步来个显示函数
+            #print出无法识别的包
+            if list_to_display(para.showpacket, para.RANK + 1)[1] == '无法识别':
+                print(para.showpacket)
             displaygui(list_to_display(para.showpacket, para.RANK+1), para.RANK)
             para.RANK += 1
             #将包内容填到缓存里
@@ -974,19 +977,19 @@ def displaygui(showlist, rank):
     Treeitem = QtWidgets.QTreeWidgetItem(gui_object.treeWidget)
     item_num = 0
     # 根据协议分颜色
-    if showlist[3] == ' TCP ':
+    if showlist[3] == 'TCP':
         brush = QtGui.QBrush(QtGui.QColor(254, 217, 166))
         brush.setStyle(QtCore.Qt.SolidPattern)
-    elif showlist[3] == ' UDP ':
+    elif showlist[3] == 'UDP':
         brush = QtGui.QBrush(QtGui.QColor(179, 205, 227))
         brush.setStyle(QtCore.Qt.SolidPattern)
-    elif showlist[3] == ' ARP ':
+    elif showlist[3] == 'ARP':
         brush = QtGui.QBrush(QtGui.QColor(204, 235, 197))
         brush.setStyle(QtCore.Qt.SolidPattern)
-    elif showlist[3] == ' IPv6 ':
+    elif showlist[3] == 'IPv6':
         brush = QtGui.QBrush(QtGui.QColor(222, 203, 228))
         brush.setStyle(QtCore.Qt.SolidPattern)
-    elif showlist[3] == ' ICMP ':
+    elif showlist[3] == 'ICMP':
         brush = QtGui.QBrush(QtGui.QColor(251, 180, 174))
         brush.setStyle(QtCore.Qt.SolidPattern)
     else:
@@ -1004,86 +1007,77 @@ def Filter():
     gui_object = ui
     protocol = ui.lineEdit.text().lower()
     filterlist = para.filterlist = []
-    if protocol in ['tcp','udp','icmp','igmp','ipv6','arp','rarp']:
-        if protocol =='tcp':
-            ui.treeWidget.clear()
-            for pkt in para.packet:
-                if len(pkt) == 36:
-                    filterlist.append(pkt)
-            total = len(filterlist)
-            for i in range(total):
-                displaygui(list_to_display(filterlist[i], i+1), i)
 
-        elif protocol =='udp':
-            ui.treeWidget.clear()
-            for pkt in para.packet:
-                if len(pkt) == 25:
-                    filterlist.append(pkt)
-            total = len(filterlist)
-            for i in range(total):
-                displaygui(list_to_display(filterlist[i], i + 1), i)
-        
-        elif protocol =='icmp':
-            ui.treeWidget.clear()
-            for pkt in para.packet:
-                if len(pkt) == 26:
-                    filterlist.append(pkt)
-            total = len(filterlist)
-            for i in range(total):
-                displaygui(list_to_display(filterlist[i], i + 1), i)
+    if protocol =='tcp':
+        ui.treeWidget.clear()
+        for pkt in para.packet:
+            if len(pkt) == 36:
+                filterlist.append(pkt)
+        total = len(filterlist)
+        for i in range(total):
+            displaygui(list_to_display(filterlist[i], i+1), i)
 
-        elif protocol =='igmp':
-            ui.treeWidget.clear()
-            for pkt in para.packet:
-                if len(pkt) == 23:
-                    filterlist.append(pkt)
-            total = len(filterlist)
-            for i in range(total):
-                displaygui(list_to_display(filterlist[i], i + 1), i)
-        
-        elif protocol =='ipv6':
-            ui.treeWidget.clear()
-            for pkt in para.packet:
-                if pkt[2] == 'IPv6':
-                    filterlist.append(pkt)
-            total = len(filterlist)
-            for i in range(total):
-                displaygui(list_to_display(filterlist[i], i + 1), i)
-        
-        elif protocol =='arp':
-            ui.treeWidget.clear()
-            for pkt in para.packet:
-                if pkt[2] == 'ARP':
-                    filterlist.append(pkt)
-            total = len(filterlist)
-            for i in range(total):
-                displaygui(list_to_display(filterlist[i], i + 1), i)
+    elif protocol =='udp':
+        ui.treeWidget.clear()
+        for pkt in para.packet:
+            if len(pkt) == 25:
+                filterlist.append(pkt)
+        total = len(filterlist)
+        for i in range(total):
+            displaygui(list_to_display(filterlist[i], i + 1), i)
+    
+    elif protocol =='icmp':
+        ui.treeWidget.clear()
+        for pkt in para.packet:
+            if len(pkt) == 26:
+                filterlist.append(pkt)
+        total = len(filterlist)
+        for i in range(total):
+            displaygui(list_to_display(filterlist[i], i + 1), i)
 
-        elif protocol =='rarp':
-            ui.treeWidget.clear()
-            for pkt in para.packet:
-                if pkt[2] == 'PARP':
-                    filterlist.append(pkt)
-            total = len(filterlist)
-            for i in range(total):
-                displaygui(list_to_display(filterlist[i], i + 1), i)
+    elif protocol =='igmp':
+        ui.treeWidget.clear()
+        for pkt in para.packet:
+            if len(pkt) == 23:
+                filterlist.append(pkt)
+        total = len(filterlist)
+        for i in range(total):
+            displaygui(list_to_display(filterlist[i], i + 1), i)
+    
+    elif protocol =='ipv6':
+        ui.treeWidget.clear()
+        for pkt in para.packet:
+            if pkt[2] == 'IPv6':
+                filterlist.append(pkt)
+        total = len(filterlist)
+        for i in range(total):
+            displaygui(list_to_display(filterlist[i], i + 1), i)
+    
+    elif protocol =='arp':
+        ui.treeWidget.clear()
+        for pkt in para.packet:
+            if pkt[2] == 'ARP':
+                filterlist.append(pkt)
+        total = len(filterlist)
+        for i in range(total):
+            displaygui(list_to_display(filterlist[i], i + 1), i)
+
+    elif protocol =='rarp':
+        ui.treeWidget.clear()
+        for pkt in para.packet:
+            if pkt[2] == 'PARP':
+                filterlist.append(pkt)
+        total = len(filterlist)
+        for i in range(total):
+            displaygui(list_to_display(filterlist[i], i + 1), i)
             
-    #输入为空，可以返回原始列表（全部包显示）
-    elif protocol == '':
+    #随意输入，可以返回原始列表（全部包显示）
+    else:
         ui.treeWidget.clear()
         i = 0
         for pkt in para.packet:
             displaygui(list_to_display(pkt, i+1), i)
             i += 1
-    
-    else:
-        ui.treeWidget.clear()
-        for pkt in para.packet:
-            if protocol in pkt[-3]:
-                filterlist.append(pkt)
-        total = len(filterlist)
-        for i in range(total):
-            displaygui(list_to_display(filterlist[i], i + 1), i)
 
 
 #抓包过滤函数，这个函数要在运行抓包指令开始之前跑一遍

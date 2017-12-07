@@ -8,7 +8,7 @@ def etherPacketLoop(pkt_data,len):
     dst = ''
     protocol = ''
     for i in range(5):
-        src = src + "%.2x-" % (pkt_data[i])#pkt_data是一组十进制数，eg. 213 = 0xD5 则通过"%.2x"转为d5，两个十六进制数是一个Byte，一共6Byte目的MAC地址
+        src = src + "%.2x-" % (pkt_data[i])
     src = src + ("%.2x" % pkt_data[5])
     #0-5为目的MAC----------------------------------------0
     for i in range(5):
@@ -254,7 +254,7 @@ def IPv4PacketLoop(pkt_data,len):
     ip_DF = (tmp1 // 4 )% 2
     ip_MF = (tmp1 // 2 )% 2
     ip_off = ""
-    ip_off = ip_off + "%d" % (int(tmp[3:],16))
+    ip_off = ip_off + "%d" % (int(tmp[1:],16)+4096*(tmp1%2))
     packet.append(ip_DF)
     packet.append(ip_MF)
     packet.append(ip_off)
@@ -315,7 +315,21 @@ def IPv4PacketLoop(pkt_data,len):
     ip_dataStart = ip_oplen*4 + 34
     # 数据的第一个字节偏移量
     # 用得少，再说吧
-    if (ip_p == "01" ):
+    if (ip_off != "0"):
+        packet.append("分片包")
+        # 分片包----------------------------------------17
+        data = ""
+        dataANSI = ""
+        for i in range(len):
+            data = data + "%.2x " % (pkt_data[i])
+            if (pkt_data[i] > 31 and pkt_data[i] < 127):
+                dataANSI = dataANSI + chr(pkt_data[i])
+            else:
+                dataANSI = dataANSI + '.'
+        packet.append(data)
+        packet.append(dataANSI)
+        return packet
+    elif (ip_p == "01" ):
         #ICMP
         return packet + ICMPPacketLoop(pkt_data, len, ip_dataStart)
     elif (ip_p == "02" ):
@@ -333,7 +347,18 @@ def IPv4PacketLoop(pkt_data,len):
     elif (ip_p == "3a" ):
         #ICMP
         return packet + ICMPv6PacketLoop(pkt_data, len, ip_dataStart)
-    packet.append("未识别的后续内容")#----------------------------------------17
+    else:
+        packet.append("未识别的后续内容")#----------------------------------------17
+        data = ""
+        dataANSI = ""
+        for i in range(len):
+            data = data + "%.2x " % (pkt_data[i])
+            if (pkt_data[i] > 31 and pkt_data[i] < 127):
+                dataANSI = dataANSI + chr(pkt_data[i])
+            else:
+                dataANSI = dataANSI + '.'
+        packet.append(data)
+        packet.append(dataANSI)
     return packet
 # IPv6包处理
 
