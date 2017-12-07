@@ -277,8 +277,10 @@ def IPv4PacketLoop(pkt_data,len):
         packet.append("TCP")
     elif (ip_p == "11"):
         packet.append("UDP")
+    elif (ip_p == "29"):
+        packet.append("IPv6")
     else:
-        packet.append("未定义的协议")
+        packet.append(ip_p)
 
     #首部校验和----------------------------------------13
     ip_cksum = ""
@@ -343,7 +345,7 @@ def IPv4PacketLoop(pkt_data,len):
         return packet + UDPPacketLoop(pkt_data, len, ip_dataStart)
     elif (ip_p == "29" ):
         #TCP
-        return packet +UDPPacketLoop(pkt_data, len, ip_dataStart)
+        return packet +IPv6PacketLoop(pkt_data, len, ip_dataStart)
     elif (ip_p == "3a" ):
         #ICMP
         return packet + ICMPv6PacketLoop(pkt_data, len, ip_dataStart)
@@ -369,7 +371,7 @@ def IPv6PacketLoop(pkt_data, len ,begin):
     tmp = ""
     for i in range(4):
         tmp = tmp + "%.2x" % (pkt_data[begin + i])
-
+    #-------------------------------------------------------------ipV4头部的话此处17 对应+14
     # ip版本----------------------------------------3
     ip_v = tmp[0]
     packet.append(ip_v)
@@ -413,7 +415,8 @@ def IPv6PacketLoop(pkt_data, len ,begin):
             ip_dst = ip_dst + ":"
     packet.append(ip_src)
     ip_dataStart = begin + 40
-    if (ip_nxth == "58" ):
+    # 协议名----------------------------------------11
+    if (ip_nxth == "3a" ):
         #ICMP
         packet.append("ICMPv6")
         return packet + ICMPv6PacketLoop(pkt_data, len, ip_dataStart)
@@ -567,7 +570,7 @@ def ICMPPacketLoop(pkt_data, len, begin):
 def ICMPv6PacketLoop(pkt_data, len, begin):
     # 从begin开始
     packet = []
-    # 提示类型，又来了，疯掉了
+    # 提示类型，又来了，疯掉了----------------------------------------12
     tmp = "%.2x" % (pkt_data[begin])
     icmp_type = (int(tmp,16))
     tmp = "%.2x" % (pkt_data[begin + 1])
@@ -672,14 +675,14 @@ def ICMPv6PacketLoop(pkt_data, len, begin):
         packet.append("	RPL控制消息")
     else:
         packet.append("未识别的协议请求")
-#校验和
+#校验和----------------------------------------13
     icmp_cksum = ""
     for i in range(2):
         icmp_cksum = icmp_cksum + "%.2x" % (pkt_data[begin + 2 + i])
     packet.append(icmp_cksum)
 
 
-    # 剩余数据
+    # 剩余数据----------------------------------------14
     icmp_data = ""
     icmp_dataANSI = ""
     for i in range(len):

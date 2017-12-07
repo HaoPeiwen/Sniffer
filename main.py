@@ -1,4 +1,4 @@
-import sys, string, platform, time, threading, re
+import sys, string, platform, time, threading , re
 from PyQt5 import QtCore, QtWidgets, QtGui
 from ctypes import *
 from winpcapy import *
@@ -271,7 +271,7 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         self.listWidget.setSortingEnabled(False)
         self.listWidget.setSortingEnabled(__sortingEnabled)
         self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(self.tab_Ethernet),
-                                          _translate("SnifferGUI", "Ethernet"))
+                                          _translate("SnifferGUI", "以太网帧"))
         __sortingEnabled = self.listWidget_IP.isSortingEnabled()
         self.listWidget_IP.setSortingEnabled(False)
         self.listWidget_IP.setSortingEnabled(__sortingEnabled)
@@ -281,9 +281,9 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         self.listWidget_Protocol.setSortingEnabled(False)
         self.listWidget_Protocol.setSortingEnabled(__sortingEnabled)
         self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(self.tab_Protocol),
-                                          _translate("SnifferGUI", "Protocol"))
+                                          _translate("SnifferGUI", "协议"))
         self.tabWidget_Reassemble.setTabText(self.tabWidget_Reassemble.indexOf(self.tab_String),
-                                             _translate("SnifferGUI", "String"))
+                                             _translate("SnifferGUI", "内容"))
         self.tabWidget_Reassemble.setTabText(self.tabWidget_Reassemble.indexOf(self.tab_HEX),
                                              _translate("SnifferGUI", "<HEX重组>"))
         self.tabWidget_Reassemble.setTabText(self.tabWidget_Reassemble.indexOf(self.tab_GBK),
@@ -339,21 +339,16 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         PktLst = []
         PktDataANSI = ""
         for packets in para.packet:
-            print ("")
             if (len(packets)<8):
                 pass
             elif ((packets[2] == "IPv4" )and (packets[7] == id )):
                 print(packets[7])
                 PktLst.append((packets[-3],packets[-4],packets[10]))
-        print (PktLst)
         PktLst = sorted(PktLst, key=lambda x: int(x[2]))
         ##加工一下
         for fragments in PktLst:
-            print(fragments)
             PktDataANSI = PktDataANSI + fragments[0][34:]
-            print('111')
             PktDataHex = PktDataHex + fragments[1][102:]
-            print('222')
         return [PktDataHex, PktDataANSI]
         #print (PktDataHex)
         #print (PktDataANSI)
@@ -476,165 +471,312 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         elif pktlis[pktindex][2] == 'IPv6':
             self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
                 self.tab_IP), _translate("SnifferGUI", "IPv6"))
-            self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
-                self.tab_Protocol), _translate("SnifferGUI", "NULL"))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(0).setText(_translate(
-                "SnifferGUI", "IP协议版本: " + pktlis[pktindex][3]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(1).setText(_translate(
-                "SnifferGUI", "优先级: " + str(pktlis[pktindex][4])))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(2).setText(_translate(
-                "SnifferGUI", "流量标识: " + pktlis[pktindex][5]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(3).setText(_translate(
-                "SnifferGUI", "载荷长度: " + str(pktlis[pktindex][6])))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(4).setText(_translate(
-                "SnifferGUI", "下一包头: " + str(pktlis[pktindex][7])))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(5).setText(
-                _translate("SnifferGUI", "跳数限制: " + str(pktlis[pktindex][8])))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(6).setText(
-                _translate("SnifferGUI", "源地址: " + pktlis[pktindex][9]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(7).setText(
-                _translate("SnifferGUI", "目的地址: " + pktlis[pktindex][10]))
-
+            if pktlis[pktindex][11] == 'ICMPv6':
+                self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
+                    self.tab_Protocol), _translate("SnifferGUI", "ICMPv6"))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(0).setText(_translate(
+                    "SnifferGUI", "IP协议版本: " + pktlis[pktindex][3]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(1).setText(_translate(
+                    "SnifferGUI", "优先级: " + str(pktlis[pktindex][4])))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(2).setText(_translate(
+                    "SnifferGUI", "流量标识: " + pktlis[pktindex][5]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(3).setText(_translate(
+                    "SnifferGUI", "载荷长度: " + str(pktlis[pktindex][6])))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(4).setText(_translate(
+                    "SnifferGUI", "下一包头: " + str(pktlis[pktindex][7])))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(5).setText(
+                    _translate("SnifferGUI", "跳数限制: " + str(pktlis[pktindex][8])))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(6).setText(
+                    _translate("SnifferGUI", "源地址: " + pktlis[pktindex][9]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(7).setText(
+                    _translate("SnifferGUI", "目的地址: " + pktlis[pktindex][10]))
+                #ICMPv6
+                self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_Protocol.item(0).setText(
+                    _translate("SnifferGUI", "提示类型: " + str(pktlis[pktindex][12])))
+                self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_Protocol.item(1).setText(
+                    _translate("SnifferGUI", "校验和: " + str(pktlis[pktindex][13])))
+            else:
+                self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
+                    self.tab_Protocol), _translate("SnifferGUI", "NULL"))
+                self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
+                    self.tab_IP), _translate("SnifferGUI", "IPv6"))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(0).setText(_translate(
+                    "SnifferGUI", "IP协议版本: " + pktlis[pktindex][3]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(1).setText(_translate(
+                    "SnifferGUI", "优先级: " + str(pktlis[pktindex][4])))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(2).setText(_translate(
+                    "SnifferGUI", "流量标识: " + pktlis[pktindex][5]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(3).setText(_translate(
+                    "SnifferGUI", "载荷长度: " + str(pktlis[pktindex][6])))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(4).setText(_translate(
+                    "SnifferGUI", "下一包头: " + str(pktlis[pktindex][7])))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(5).setText(
+                    _translate("SnifferGUI", "跳数限制: " + str(pktlis[pktindex][8])))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(6).setText(
+                    _translate("SnifferGUI", "源地址: " + pktlis[pktindex][9]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(7).setText(
+                    _translate("SnifferGUI", "目的地址: " + pktlis[pktindex][10]))
         elif len(pktlis[pktindex]) < 12:
-            self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
-                self.tab_Protocol), _translate("SnifferGUI", "NULL"))
-            self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
-                self.tab_IP), _translate("SnifferGUI", "NULL"))
-
-        elif pktlis[pktindex][12] == 'TCP': # 以后需要显示什么再说，先摆在这里
+            pass
+        else:
             self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
                 self.tab_IP), _translate("SnifferGUI", "IPv4"))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(0).setText(_translate(
-                "SnifferGUI", "IP协议版本: " + pktlis[pktindex][3]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(1).setText(_translate(
-                "SnifferGUI", "IP包首部长度: " + str(pktlis[pktindex][4])))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(2).setText(_translate(
-                "SnifferGUI", "服务类型: " + pktlis[pktindex][5]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(3).setText(_translate(
-                "SnifferGUI", "IP包总长度: " + str(pktlis[pktindex][6])))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(4).setText(_translate(
-                "SnifferGUI", "标识: " + pktlis[pktindex][7]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(5).setText(_translate(
-                "SnifferGUI", "禁止分片: " + (pktlis[pktindex][8] == 1 and "是" or "否")))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(6).setText(_translate(
-                "SnifferGUI", "更多分片: " + (pktlis[pktindex][9] == 1 and "是" or "否")))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(7).setText(_translate(
-                "SnifferGUI", "片内偏移: " + pktlis[pktindex][10]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(8).setText(_translate(
-                "SnifferGUI", "生存时间: " + pktlis[pktindex][11]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(9).setText(_translate(
-                "SnifferGUI", "首部校验和: " + pktlis[pktindex][13]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(10).setText(_translate(
-                "SnifferGUI", "源IP: " + pktlis[pktindex][14]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(11).setText(_translate(
-                "SnifferGUI", "目的IP: " + pktlis[pktindex][15]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(12).setText(_translate(
-                "SnifferGUI", "选项: " + pktlis[pktindex][16]))
-            ## 以上是IP包的字段，以下是TCP包字段
-            self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
-                self.tab_Protocol), _translate("SnifferGUI", "TCP"))
-            self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_Protocol.item(0).setText(
-                _translate("SnifferGUI", "源端口: " + str(pktlis[pktindex][17])))
-            self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_Protocol.item(1).setText(
-                _translate("SnifferGUI", "目的端口: " + str(pktlis[pktindex][18])))
-            self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_Protocol.item(2).setText(
-                _translate("SnifferGUI", "序号seq: " + str(pktlis[pktindex][19])))
-            self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_Protocol.item(3).setText(
-                _translate("SnifferGUI", "确认序号ack: " + str(pktlis[pktindex][20])))
-            self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_Protocol.item(4).setText(
-                _translate("SnifferGUI", "首部长度: " + str(pktlis[pktindex][21])))
-            self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_Protocol.item(5).setText(
-                _translate("SnifferGUI", "6位标志位: " + str(pktlis[pktindex][23])
-                        +str(pktlis[pktindex][24])
-                        +str(pktlis[pktindex][25])
-                        +str(pktlis[pktindex][26])
-                        +str(pktlis[pktindex][27])
-                        +str(pktlis[pktindex][28])))
-            self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_Protocol.item(6).setText(
-                _translate("SnifferGUI", "窗口大小: " + str(pktlis[pktindex][29])))
-            self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_Protocol.item(7).setText(
-                _translate("SnifferGUI", "TCP校验和: " + pktlis[pktindex][30]))
-            self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_Protocol.item(8).setText(
-                _translate("SnifferGUI", "紧急数据偏移量: " + str(pktlis[pktindex][31])))
+            if pktlis[pktindex][12] == 'TCP': # 以后需要显示什么再说，先摆在这里
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(0).setText(_translate(
+                    "SnifferGUI", "IP协议版本: " + pktlis[pktindex][3]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(1).setText(_translate(
+                    "SnifferGUI", "IP包首部长度: " + str(pktlis[pktindex][4])))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(2).setText(_translate(
+                    "SnifferGUI", "服务类型: " + pktlis[pktindex][5]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(3).setText(_translate(
+                    "SnifferGUI", "IP包总长度: " + str(pktlis[pktindex][6])))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(4).setText(_translate(
+                    "SnifferGUI", "标识: " + pktlis[pktindex][7]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(5).setText(_translate(
+                    "SnifferGUI", "禁止分片: " + (pktlis[pktindex][8] == 1 and "是" or "否")))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(6).setText(_translate(
+                    "SnifferGUI", "更多分片: " + (pktlis[pktindex][9] == 1 and "是" or "否")))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(7).setText(_translate(
+                    "SnifferGUI", "片内偏移: " + pktlis[pktindex][10]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(8).setText(_translate(
+                    "SnifferGUI", "生存时间: " + pktlis[pktindex][11]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(9).setText(_translate(
+                    "SnifferGUI", "首部校验和: " + pktlis[pktindex][13]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(10).setText(_translate(
+                    "SnifferGUI", "源IP: " + pktlis[pktindex][14]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(11).setText(_translate(
+                    "SnifferGUI", "目的IP: " + pktlis[pktindex][15]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(12).setText(_translate(
+                    "SnifferGUI", "选项: " + pktlis[pktindex][16]))
+                ## 以上是IP包的字段，以下是TCP包字段
+                self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
+                    self.tab_Protocol), _translate("SnifferGUI", "TCP"))
+                self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_Protocol.item(0).setText(
+                    _translate("SnifferGUI", "源端口: " + str(pktlis[pktindex][17])))
+                self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_Protocol.item(1).setText(
+                    _translate("SnifferGUI", "目的端口: " + str(pktlis[pktindex][18])))
+                self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_Protocol.item(2).setText(
+                    _translate("SnifferGUI", "序号seq: " + str(pktlis[pktindex][19])))
+                self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_Protocol.item(3).setText(
+                    _translate("SnifferGUI", "确认序号ack: " + str(pktlis[pktindex][20])))
+                self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_Protocol.item(4).setText(
+                    _translate("SnifferGUI", "首部长度: " + str(pktlis[pktindex][21])))
+                self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_Protocol.item(5).setText(
+                    _translate("SnifferGUI", "6位标志位: " + str(pktlis[pktindex][23])
+                            +str(pktlis[pktindex][24])
+                            +str(pktlis[pktindex][25])
+                            +str(pktlis[pktindex][26])
+                            +str(pktlis[pktindex][27])
+                            +str(pktlis[pktindex][28])))
+                self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_Protocol.item(6).setText(
+                    _translate("SnifferGUI", "窗口大小: " + str(pktlis[pktindex][29])))
+                self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_Protocol.item(7).setText(
+                    _translate("SnifferGUI", "TCP校验和: " + pktlis[pktindex][30]))
+                self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_Protocol.item(8).setText(
+                    _translate("SnifferGUI", "紧急数据偏移量: " + str(pktlis[pktindex][31])))
 
-        elif pktlis[pktindex][12]  == 'ICMP':
-            self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
-                self.tab_IP), _translate("SnifferGUI", "IPv4"))
-            self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
-                self.tab_Protocol), _translate("SnifferGUI", "ICMP"))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(0).setText(_translate(
-                "SnifferGUI", "IP协议版本: " + pktlis[pktindex][3]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(1).setText(_translate(
-                "SnifferGUI", "IP包首部长度: " + str(pktlis[pktindex][4])))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(2).setText(_translate(
-                "SnifferGUI", "服务类型: " + pktlis[pktindex][5]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(3).setText(_translate(
-                "SnifferGUI", "IP包总长度: " + str(pktlis[pktindex][6])))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(4).setText(_translate(
-                "SnifferGUI", "标识: " + pktlis[pktindex][7]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(5).setText(_translate(
-                "SnifferGUI", "禁止分片: " + (pktlis[pktindex][8] == 1 and "是" or "否")))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(6).setText(_translate(
-                "SnifferGUI", "更多分片: " + (pktlis[pktindex][9] == 1 and "是" or "否")))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(7).setText(_translate(
-                "SnifferGUI", "片内偏移: " + pktlis[pktindex][10]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(8).setText(_translate(
-                "SnifferGUI", "生存时间: " + pktlis[pktindex][11]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(9).setText(_translate(
-                "SnifferGUI", "首部校验和: " + pktlis[pktindex][13]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(10).setText(_translate(
-                "SnifferGUI", "源IP: " + pktlis[pktindex][14]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(11).setText(_translate(
-                "SnifferGUI", "目的IP: " + pktlis[pktindex][15]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(12).setText(_translate(
-                "SnifferGUI", "选项: " + pktlis[pktindex][16]))
+            elif pktlis[pktindex][12]  == 'ICMP':
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(0).setText(_translate(
+                    "SnifferGUI", "IP协议版本: " + pktlis[pktindex][3]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(1).setText(_translate(
+                    "SnifferGUI", "IP包首部长度: " + str(pktlis[pktindex][4])))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(2).setText(_translate(
+                    "SnifferGUI", "服务类型: " + pktlis[pktindex][5]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(3).setText(_translate(
+                    "SnifferGUI", "IP包总长度: " + str(pktlis[pktindex][6])))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(4).setText(_translate(
+                    "SnifferGUI", "标识: " + pktlis[pktindex][7]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(5).setText(_translate(
+                    "SnifferGUI", "禁止分片: " + (pktlis[pktindex][8] == 1 and "是" or "否")))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(6).setText(_translate(
+                    "SnifferGUI", "更多分片: " + (pktlis[pktindex][9] == 1 and "是" or "否")))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(7).setText(_translate(
+                    "SnifferGUI", "片内偏移: " + pktlis[pktindex][10]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(8).setText(_translate(
+                    "SnifferGUI", "生存时间: " + pktlis[pktindex][11]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(9).setText(_translate(
+                    "SnifferGUI", "首部校验和: " + pktlis[pktindex][13]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(10).setText(_translate(
+                    "SnifferGUI", "源IP: " + pktlis[pktindex][14]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(11).setText(_translate(
+                    "SnifferGUI", "目的IP: " + pktlis[pktindex][15]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(12).setText(_translate(
+                    "SnifferGUI", "选项: " + pktlis[pktindex][16]))
 
-            ## 以上是IP包的字段，以下是ICMP包字段
+                ## 以上是IP包的字段，以下是ICMP包字段
 
-            if (pktlis[pktindex][17] != "分片包"):
+                if (pktlis[pktindex][17] != "分片包"):
+                    self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
+                        self.tab_Protocol), _translate("SnifferGUI", "ICMP"))
+                    self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
+                    self.listWidget_Protocol.item(0).setText(
+                        _translate("SnifferGUI", "操作类型: " + pktlis[pktindex][17]))
+                    self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
+                    self.listWidget_Protocol.item(1).setText(
+                        _translate("SnifferGUI", "具体操作: " + pktlis[pktindex][18]))
+                    self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
+                    self.listWidget_Protocol.item(2).setText(
+                        _translate("SnifferGUI", "ICMP校验和: " + pktlis[pktindex][19]))
+                    self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
+                    self.listWidget_Protocol.item(3).setText(
+                        _translate("SnifferGUI", "ID: " + str(pktlis[pktindex][20])))
+                    self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
+                    self.listWidget_Protocol.item(4).setText(
+                        _translate("SnifferGUI", "序列号: " + str(pktlis[pktindex][21])))
+
+            elif pktlis[pktindex][12] == 'UDP':
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(0).setText(_translate(
+                    "SnifferGUI", "IP协议版本: " + pktlis[pktindex][3]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(1).setText(_translate(
+                    "SnifferGUI", "IP包首部长度: " + str(pktlis[pktindex][4])))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(2).setText(_translate(
+                    "SnifferGUI", "服务类型: " + pktlis[pktindex][5]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(3).setText(_translate(
+                    "SnifferGUI", "IP包总长度: " + str(pktlis[pktindex][6])))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(4).setText(_translate(
+                    "SnifferGUI", "标识: " + pktlis[pktindex][7]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(5).setText(_translate(
+                    "SnifferGUI", "禁止分片: " + (pktlis[pktindex][8] == 1 and "是" or "否")))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(6).setText(_translate(
+                    "SnifferGUI", "更多分片: " + (pktlis[pktindex][9] == 1 and "是" or "否")))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(7).setText(_translate(
+                    "SnifferGUI", "片内偏移: " + pktlis[pktindex][10]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(8).setText(_translate(
+                    "SnifferGUI", "生存时间: " + pktlis[pktindex][11]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(9).setText(_translate(
+                    "SnifferGUI", "首部校验和: " + pktlis[pktindex][13]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(10).setText(_translate(
+                    "SnifferGUI", "源IP: " + pktlis[pktindex][14]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(11).setText(_translate(
+                    "SnifferGUI", "目的IP: " + pktlis[pktindex][15]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(12).setText(_translate(
+                    "SnifferGUI", "选项: " + pktlis[pktindex][16]))
+
+                ## 以上是IP包的字段，以下是UDP包字段
+
+                self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
+                    self.tab_Protocol), _translate("SnifferGUI", "UDP"))
+                self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_Protocol.item(0).setText(
+                    _translate("SnifferGUI", "源端口: " + str(pktlis[pktindex][17])))
+                self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_Protocol.item(1).setText(
+                    _translate("SnifferGUI", "目的端口: " + str(pktlis[pktindex][18])))
+                self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_Protocol.item(2).setText(
+                    _translate("SnifferGUI", "UDP长度: " + str(pktlis[pktindex][19])))
+                self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_Protocol.item(3).setText(
+                    _translate("SnifferGUI", "校验和: " + pktlis[pktindex][20]))
+
+            elif pktlis[pktindex][12] == 'IGMP':
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(0).setText(_translate(
+                    "SnifferGUI", "IP协议版本: " + pktlis[pktindex][3]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(1).setText(_translate(
+                    "SnifferGUI", "IP包首部长度: " + str(pktlis[pktindex][4])))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(2).setText(_translate(
+                    "SnifferGUI", "服务类型: " + pktlis[pktindex][5]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(3).setText(_translate(
+                    "SnifferGUI", "IP包总长度: " + str(pktlis[pktindex][6])))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(4).setText(_translate(
+                    "SnifferGUI", "标识: " + pktlis[pktindex][7]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(5).setText(_translate(
+                    "SnifferGUI", "禁止分片: " + (pktlis[pktindex][8] == 1 and "是" or "否")))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(6).setText(_translate(
+                    "SnifferGUI", "更多分片: " + (pktlis[pktindex][9] == 1 and "是" or "否")))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(7).setText(_translate(
+                    "SnifferGUI", "片内偏移: " + pktlis[pktindex][10]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(8).setText(_translate(
+                    "SnifferGUI", "生存时间: " + pktlis[pktindex][11]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(9).setText(_translate(
+                    "SnifferGUI", "首部校验和: " + pktlis[pktindex][13]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(10).setText(_translate(
+                    "SnifferGUI", "源IP: " + pktlis[pktindex][14]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(11).setText(_translate(
+                    "SnifferGUI", "目的IP: " + pktlis[pktindex][15]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(12).setText(_translate(
+                    "SnifferGUI", "选项: " + pktlis[pktindex][16]))
+
+                ## 以上是IP包的字段，以下是ICMP包字段
                 self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
                     self.tab_Protocol), _translate("SnifferGUI", "ICMP"))
                 self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
@@ -642,183 +784,126 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
                     _translate("SnifferGUI", "操作类型: " + pktlis[pktindex][17]))
                 self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
                 self.listWidget_Protocol.item(1).setText(
-                    _translate("SnifferGUI", "具体操作: " + pktlis[pktindex][18]))
+                    _translate("SnifferGUI", "最大响应时间: " + str(pktlis[pktindex][18])))
                 self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
                 self.listWidget_Protocol.item(2).setText(
-                    _translate("SnifferGUI", "ICMP校验和: " + pktlis[pktindex][19]))
+                    _translate("SnifferGUI", "IGMP校验和: " + pktlis[pktindex][19]))
                 self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
                 self.listWidget_Protocol.item(3).setText(
-                    _translate("SnifferGUI", "ID: " + str(pktlis[pktindex][20])))
+                    _translate("SnifferGUI", "组地址: " + pktlis[pktindex][20]))
+
+            elif pktlis[pktindex][12]  == 'IPv6':
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(0).setText(_translate(
+                    "SnifferGUI", "IP协议版本: " + pktlis[pktindex][3]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(1).setText(_translate(
+                    "SnifferGUI", "IP包首部长度: " + str(pktlis[pktindex][4])))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(2).setText(_translate(
+                    "SnifferGUI", "服务类型: " + pktlis[pktindex][5]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(3).setText(_translate(
+                    "SnifferGUI", "IP包总长度: " + str(pktlis[pktindex][6])))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(4).setText(_translate(
+                    "SnifferGUI", "标识: " + pktlis[pktindex][7]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(5).setText(_translate(
+                    "SnifferGUI", "禁止分片: " + (pktlis[pktindex][8] == 1 and "是" or "否")))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(6).setText(_translate(
+                    "SnifferGUI", "更多分片: " + (pktlis[pktindex][9] == 1 and "是" or "否")))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(7).setText(_translate(
+                    "SnifferGUI", "片内偏移: " + pktlis[pktindex][10]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(8).setText(_translate(
+                    "SnifferGUI", "生存时间: " + pktlis[pktindex][11]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(9).setText(_translate(
+                    "SnifferGUI", "首部校验和: " + pktlis[pktindex][13]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(10).setText(_translate(
+                    "SnifferGUI", "源IP: " + pktlis[pktindex][14]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(11).setText(_translate(
+                    "SnifferGUI", "目的IP: " + pktlis[pktindex][15]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(12).setText(_translate(
+                    "SnifferGUI", "选项: " + pktlis[pktindex][16]))
+
+                ## 以上是IP包的字段，以下是ICMP包字段
+
+                self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
+                    self.tab_Protocol), _translate("SnifferGUI", "IPv6"))
+                self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_Protocol.item(0).setText(
+                    _translate("SnifferGUI", "IP版本: " + pktlis[pktindex][17]))
+                self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_Protocol.item(1).setText(
+                    _translate("SnifferGUI", "优先级: " + pktlis[pktindex][18]))
+                self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_Protocol.item(2).setText(
+                    _translate("SnifferGUI", "流量标识: " + pktlis[pktindex][19]))
+                self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_Protocol.item(3).setText(
+                    _translate("SnifferGUI", "载荷长度: " + str(pktlis[pktindex][20])))
                 self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
                 self.listWidget_Protocol.item(4).setText(
-                    _translate("SnifferGUI", "序列号: " + str(pktlis[pktindex][21])))
+                    _translate("SnifferGUI", "下一包头协议: " + str(pktlis[pktindex][21])))
+                self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_Protocol.item(5).setText(
+                    _translate("SnifferGUI", "跳数限制: " + str(pktlis[pktindex][22])))
+                self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_Protocol.item(6).setText(
+                    _translate("SnifferGUI", "源地址: " + str(pktlis[pktindex][23])))
+                self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_Protocol.item(7).setText(
+                    _translate("SnifferGUI", "目的地址: " + str(pktlis[pktindex][24])))
+            elif pktlis[pktindex][12] == '未定义的协议':
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(0).setText(_translate(
+                    "SnifferGUI", "IP协议版本: " + pktlis[pktindex][3]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(1).setText(_translate(
+                    "SnifferGUI", "IP包首部长度: " + str(pktlis[pktindex][4])))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(2).setText(_translate(
+                    "SnifferGUI", "服务类型: " + pktlis[pktindex][5]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(3).setText(_translate(
+                    "SnifferGUI", "IP包总长度: " + str(pktlis[pktindex][6])))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(4).setText(_translate(
+                    "SnifferGUI", "标识: " + pktlis[pktindex][7]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(5).setText(_translate(
+                    "SnifferGUI", "禁止分片: " + (pktlis[pktindex][8] == 1 and "是" or "否")))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(6).setText(_translate(
+                    "SnifferGUI", "更多分片: " + (pktlis[pktindex][9] == 1 and "是" or "否")))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(7).setText(_translate(
+                    "SnifferGUI", "片内偏移: " + pktlis[pktindex][10]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(8).setText(_translate(
+                    "SnifferGUI", "生存时间: " + pktlis[pktindex][11]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(9).setText(_translate(
+                    "SnifferGUI", "首部校验和: " + pktlis[pktindex][13]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(10).setText(_translate(
+                    "SnifferGUI", "源IP: " + pktlis[pktindex][14]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(11).setText(_translate(
+                    "SnifferGUI", "目的IP: " + pktlis[pktindex][15]))
+                self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
+                self.listWidget_IP.item(12).setText(_translate(
+                    "SnifferGUI", "选项: " + pktlis[pktindex][16]))
 
-        elif pktlis[pktindex][12] == 'UDP':
-            self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
-                self.tab_IP), _translate("SnifferGUI", "IPv4"))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(0).setText(_translate(
-                "SnifferGUI", "IP协议版本: " + pktlis[pktindex][3]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(1).setText(_translate(
-                "SnifferGUI", "IP包首部长度: " + str(pktlis[pktindex][4])))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(2).setText(_translate(
-                "SnifferGUI", "服务类型: " + pktlis[pktindex][5]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(3).setText(_translate(
-                "SnifferGUI", "IP包总长度: " + str(pktlis[pktindex][6])))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(4).setText(_translate(
-                "SnifferGUI", "标识: " + pktlis[pktindex][7]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(5).setText(_translate(
-                "SnifferGUI", "禁止分片: " + (pktlis[pktindex][8] == 1 and "是" or "否")))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(6).setText(_translate(
-                "SnifferGUI", "更多分片: " + (pktlis[pktindex][9] == 1 and "是" or "否")))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(7).setText(_translate(
-                "SnifferGUI", "片内偏移: " + pktlis[pktindex][10]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(8).setText(_translate(
-                "SnifferGUI", "生存时间: " + pktlis[pktindex][11]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(9).setText(_translate(
-                "SnifferGUI", "首部校验和: " + pktlis[pktindex][13]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(10).setText(_translate(
-                "SnifferGUI", "源IP: " + pktlis[pktindex][14]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(11).setText(_translate(
-                "SnifferGUI", "目的IP: " + pktlis[pktindex][15]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(12).setText(_translate(
-                "SnifferGUI", "选项: " + pktlis[pktindex][16]))
-
-            ## 以上是IP包的字段，以下是UDP包字段
-
-            self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
-                self.tab_Protocol), _translate("SnifferGUI", "UDP"))
-            self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_Protocol.item(0).setText(
-                _translate("SnifferGUI", "源端口: " + str(pktlis[pktindex][17])))
-            self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_Protocol.item(1).setText(
-                _translate("SnifferGUI", "目的端口: " + str(pktlis[pktindex][18])))
-            self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_Protocol.item(2).setText(
-                _translate("SnifferGUI", "UDP长度: " + str(pktlis[pktindex][19])))
-            self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_Protocol.item(3).setText(
-                _translate("SnifferGUI", "校验和: " + pktlis[pktindex][20]))
-
-        elif pktlis[pktindex][12] == 'IGMP':
-            self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
-                self.tab_IP), _translate("SnifferGUI", "IPv4"))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(0).setText(_translate(
-                "SnifferGUI", "IP协议版本: " + pktlis[pktindex][3]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(1).setText(_translate(
-                "SnifferGUI", "IP包首部长度: " + str(pktlis[pktindex][4])))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(2).setText(_translate(
-                "SnifferGUI", "服务类型: " + pktlis[pktindex][5]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(3).setText(_translate(
-                "SnifferGUI", "IP包总长度: " + str(pktlis[pktindex][6])))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(4).setText(_translate(
-                "SnifferGUI", "标识: " + pktlis[pktindex][7]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(5).setText(_translate(
-                "SnifferGUI", "禁止分片: " + (pktlis[pktindex][8] == 1 and "是" or "否")))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(6).setText(_translate(
-                "SnifferGUI", "更多分片: " + (pktlis[pktindex][9] == 1 and "是" or "否")))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(7).setText(_translate(
-                "SnifferGUI", "片内偏移: " + pktlis[pktindex][10]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(8).setText(_translate(
-                "SnifferGUI", "生存时间: " + pktlis[pktindex][11]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(9).setText(_translate(
-                "SnifferGUI", "首部校验和: " + pktlis[pktindex][13]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(10).setText(_translate(
-                "SnifferGUI", "源IP: " + pktlis[pktindex][14]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(11).setText(_translate(
-                "SnifferGUI", "目的IP: " + pktlis[pktindex][15]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(12).setText(_translate(
-                "SnifferGUI", "选项: " + pktlis[pktindex][16]))
-
-            ## 以上是IP包的字段，以下是ICMP包字段
-            self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
-                self.tab_Protocol), _translate("SnifferGUI", "ICMP"))
-            self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_Protocol.item(0).setText(
-                _translate("SnifferGUI", "操作类型: " + pktlis[pktindex][17]))
-            self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_Protocol.item(1).setText(
-                _translate("SnifferGUI", "最大响应时间: " + str(pktlis[pktindex][18])))
-            self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_Protocol.item(2).setText(
-                _translate("SnifferGUI", "IGMP校验和: " + pktlis[pktindex][19]))
-            self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_Protocol.item(3).setText(
-                _translate("SnifferGUI", "组地址: " + pktlis[pktindex][20]))
-
-        elif pktlis[pktindex][12] == '未定义的协议':
-            self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
-                self.tab_Protocol), _translate("SnifferGUI", "NULL"))
-            self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
-                self.tab_IP), _translate("SnifferGUI", "IP"))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(0).setText(_translate(
-                "SnifferGUI", "IP协议版本: " + pktlis[pktindex][3]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(1).setText(_translate(
-                "SnifferGUI", "IP包首部长度: " + str(pktlis[pktindex][4])))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(2).setText(_translate(
-                "SnifferGUI", "服务类型: " + pktlis[pktindex][5]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(3).setText(_translate(
-                "SnifferGUI", "IP包总长度: " + str(pktlis[pktindex][6])))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(4).setText(_translate(
-                "SnifferGUI", "标识: " + pktlis[pktindex][7]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(5).setText(_translate(
-                "SnifferGUI", "禁止分片: " + (pktlis[pktindex][8] == 1 and "是" or "否")))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(6).setText(_translate(
-                "SnifferGUI", "更多分片: " + (pktlis[pktindex][9] == 1 and "是" or "否")))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(7).setText(_translate(
-                "SnifferGUI", "片内偏移: " + pktlis[pktindex][10]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(8).setText(_translate(
-                "SnifferGUI", "生存时间: " + pktlis[pktindex][11]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(9).setText(_translate(
-                "SnifferGUI", "首部校验和: " + pktlis[pktindex][13]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(10).setText(_translate(
-                "SnifferGUI", "源IP: " + pktlis[pktindex][14]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(11).setText(_translate(
-                "SnifferGUI", "目的IP: " + pktlis[pktindex][15]))
-            self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
-            self.listWidget_IP.item(12).setText(_translate(
-                "SnifferGUI", "选项: " + pktlis[pktindex][16]))
-
-        else:
-            pass
+            else:
+                pass
 
 
 def backsearch():
@@ -903,11 +988,19 @@ def list_to_display(lista,Num):  # 显示上面窗口的src，dst，prt，len等
             listdisplay.append("我是" + lista[9] + "，我的MAC是" + lista[8])
 
     elif lista[2] == 'IPv6':
-        listdisplay = [str(lista[i]) for i in [9, 10, 2]]
-        listdisplay.append(lista[-1])  # 长度
-        listdisplay.append(lista[-2][:11])  # 日期
-        listdisplay.append(lista[-2][11:24])  # 时间
-        listdisplay.append(lista[9] + "->" +lista[10])
+        if lista[11] == 'ICMPv6':
+            listdisplay = [str(lista[i]) for i in [9, 10, 11]]
+            listdisplay.append(lista[-1])  # 长度
+            listdisplay.append(lista[-2][:11])  # 日期
+            listdisplay.append(lista[-2][11:24])  # 时间
+            listdisplay.append("ICMPv6"+ lista[12])
+        else:
+            listdisplay = [str(lista[i]) for i in [9, 10, 2]]
+            listdisplay.append(lista[-1])  # 长度
+            listdisplay.append(lista[-2][:11])  # 日期
+            listdisplay.append(lista[-2][11:24])  # 时间
+            listdisplay.append(lista[9] + "->" + lista[10])
+    #以下为ipv4族
     else:
         if len(lista)>12:
             if lista[12] == 'UDP':
@@ -940,19 +1033,26 @@ def list_to_display(lista,Num):  # 显示上面窗口的src，dst，prt，len等
                 listdisplay.append(lista[-2][:11])  # 日期
                 listdisplay.append(lista[-2][11:24])  # 时间
                 listdisplay.append('ICMP分片')
+            elif lista[12] == 'IPv6':
+                listdisplay = [str(lista[i]) for i in [14, 15, 12]]
+                listdisplay.append(lista[-1])  # 长度
+                listdisplay.append(lista[-2][:11])  # 日期
+                listdisplay.append(lista[-2][11:24])  # 时间
+                listdisplay.append(lista[23] + '->' + lista[24])
+                print (Num)
             else :
                 listdisplay = ['无法识别', '', '']
                 listdisplay.append(lista[-1])  # 长度
                 listdisplay.append(lista[-2][:11])  # 日期
                 listdisplay.append(lista[-2][11:24])  # 时间
-                listdisplay.append('无法识别的字段！')
+                listdisplay.append('未识别的编号为' + lista[12] + "的传输层协议！")
 
         else:
             listdisplay = ['无法识别','','']
             listdisplay.append(lista[-1])  # 长度
             listdisplay.append(lista[-2][:11])  # 日期
             listdisplay.append(lista[-2][11:24])  # 时间
-            listdisplay.append('你听说过编号为 '+ lista[2] + ' 的协议吗？我没听过啊，长这么大。。白活了。。')
+            listdisplay.append('未识别的编号为'+ lista[2] + '的IP层协议！')
 
     listdisplay.insert(0, str(Num))
     return listdisplay
@@ -970,6 +1070,7 @@ def threadlisten(): #开启一个线程抓包
         para.ListenFlag = 1
         Process.start()
         
+
 #抓包函数
 def ListenDevice():
     para.RANK = 0
@@ -1033,16 +1134,16 @@ def displaygui(showlist, rank):
 
 #搜索过滤函数
 
+
 def Filter():
     MACaddr = re.compile(r'([A-Fa-f0-9]{2}-){5}[A-Fa-f0-9]{2}')
     IPaddr = re.compile(
         r'^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)')
     gui_object = ui
-    search_field = ui.lineEdit.text().lower() # 得到搜索字段的小写
+    search_field = ui.lineEdit.text().lower()  # 得到搜索字段的小写
     filterlist = para.filterlist = []
     if search_field in ['tcp', 'udp', 'icmp', 'igmp', 'ipv6', 'arp', 'rarp']:
-        protocol = search_field # 则搜索为协议
-
+        protocol = search_field  # 则搜索为协议
         if protocol == 'tcp':
             ui.treeWidget.clear()
             for pkt in para.packet:
@@ -1113,8 +1214,7 @@ def Filter():
         for pkt in para.packet:
             displaygui(list_to_display(pkt, i + 1), i)
             i += 1
-
-    elif re.match(MACaddr, search_field): # 若输入为mac地址格式
+    elif re.match(MACaddr, search_field):  # 若输入为mac地址格式
         ui.treeWidget.clear()
         for pkt in para.packet:
             if search_field in pkt[0] or search_field in pkt[1]:
@@ -1127,7 +1227,7 @@ def Filter():
     elif re.match(IPaddr, search_field):  # 若输入为ip地址格式
         ui.treeWidget.clear()
         for pkt in para.packet:
-            if pkt[2] in ['ARP','RARP']:
+            if pkt[2] in ['ARP', 'RARP']:
                 if search_field in [pkt[9], pkt[11]]:
                     filterlist.append(pkt)
             elif pkt[2] == 'IPv6':
@@ -1142,7 +1242,6 @@ def Filter():
         total = len(filterlist)
         for i in range(total):
             displaygui(list_to_display(filterlist[i], i + 1), i)
-
     else:
         ui.treeWidget.clear()
         for pkt in para.packet:
