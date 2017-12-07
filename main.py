@@ -1,4 +1,4 @@
-import sys, string, platform, time, threading
+import sys, string, platform, time, threading, re
 from PyQt5 import QtCore, QtWidgets, QtGui
 from ctypes import *
 from winpcapy import *
@@ -395,6 +395,8 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
 
         if pktlis[pktindex][2] == 'ARP' :
             self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
+                self.tab_IP), _translate("SnifferGUI", "NULL"))
+            self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
                 self.tab_Protocol), _translate("SnifferGUI", "ARP"))
             self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
             self.listWidget_Protocol.item(0).setText(_translate(
@@ -432,6 +434,8 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
                     _translate("SnifferGUI", "信息:我是 " + pktlis[pktindex][9] + "，我的MAC是" + pktlis[pktindex][8]))
 
         elif pktlis[pktindex][2] == 'RARP':
+            self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
+                self.tab_IP), _translate("SnifferGUI", "NULL"))
             self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
                 self.tab_Protocol), _translate("SnifferGUI", "RARP"))
             self.listWidget_Protocol.addItem(QtWidgets.QListWidgetItem())
@@ -472,6 +476,8 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         elif pktlis[pktindex][2] == 'IPv6':
             self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
                 self.tab_IP), _translate("SnifferGUI", "IPv6"))
+            self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
+                self.tab_Protocol), _translate("SnifferGUI", "NULL"))
             self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
             self.listWidget_IP.item(0).setText(_translate(
                 "SnifferGUI", "IP协议版本: " + pktlis[pktindex][3]))
@@ -498,9 +504,14 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
                 _translate("SnifferGUI", "目的地址: " + pktlis[pktindex][10]))
 
         elif len(pktlis[pktindex]) < 12:
-            pass
+            self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
+                self.tab_Protocol), _translate("SnifferGUI", "NULL"))
+            self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
+                self.tab_IP), _translate("SnifferGUI", "NULL"))
 
         elif pktlis[pktindex][12] == 'TCP': # 以后需要显示什么再说，先摆在这里
+            self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
+                self.tab_IP), _translate("SnifferGUI", "IPv4"))
             self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
             self.listWidget_IP.item(0).setText(_translate(
                 "SnifferGUI", "IP协议版本: " + pktlis[pktindex][3]))
@@ -577,6 +588,10 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
                 _translate("SnifferGUI", "紧急数据偏移量: " + str(pktlis[pktindex][31])))
 
         elif pktlis[pktindex][12]  == 'ICMP':
+            self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
+                self.tab_IP), _translate("SnifferGUI", "IPv4"))
+            self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
+                self.tab_Protocol), _translate("SnifferGUI", "ICMP"))
             self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
             self.listWidget_IP.item(0).setText(_translate(
                 "SnifferGUI", "IP协议版本: " + pktlis[pktindex][3]))
@@ -639,6 +654,8 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
                     _translate("SnifferGUI", "序列号: " + str(pktlis[pktindex][21])))
 
         elif pktlis[pktindex][12] == 'UDP':
+            self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
+                self.tab_IP), _translate("SnifferGUI", "IPv4"))
             self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
             self.listWidget_IP.item(0).setText(_translate(
                 "SnifferGUI", "IP协议版本: " + pktlis[pktindex][3]))
@@ -697,6 +714,8 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
                 _translate("SnifferGUI", "校验和: " + pktlis[pktindex][20]))
 
         elif pktlis[pktindex][12] == 'IGMP':
+            self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
+                self.tab_IP), _translate("SnifferGUI", "IPv4"))
             self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
             self.listWidget_IP.item(0).setText(_translate(
                 "SnifferGUI", "IP协议版本: " + pktlis[pktindex][3]))
@@ -754,6 +773,10 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
                 _translate("SnifferGUI", "组地址: " + pktlis[pktindex][20]))
 
         elif pktlis[pktindex][12] == '未定义的协议':
+            self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
+                self.tab_Protocol), _translate("SnifferGUI", "NULL"))
+            self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
+                self.tab_IP), _translate("SnifferGUI", "IP"))
             self.listWidget_IP.addItem(QtWidgets.QListWidgetItem())
             self.listWidget_IP.item(0).setText(_translate(
                 "SnifferGUI", "IP协议版本: " + pktlis[pktindex][3]))
@@ -947,7 +970,6 @@ def threadlisten(): #开启一个线程抓包
         para.ListenFlag = 1
         Process.start()
         
-
 #抓包函数
 def ListenDevice():
     para.RANK = 0
@@ -966,9 +988,6 @@ def ListenDevice():
             para.packet.append(para.showpacket)
             #packet为格式化的包
             #下一步来个显示函数
-            #print出无法识别的包
-            if list_to_display(para.showpacket, para.RANK + 1)[1] == '无法识别':
-                print(para.showpacket)
             displaygui(list_to_display(para.showpacket, para.RANK+1), para.RANK)
             para.RANK += 1
             #将包内容填到缓存里
@@ -1014,12 +1033,16 @@ def displaygui(showlist, rank):
 
 #搜索过滤函数
 
-
 def Filter():
+    MACaddr = re.compile(r'([A-Fa-f0-9]{2}-){5}[A-Fa-f0-9]{2}')
+    IPaddr = re.compile(
+        r'^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)')
     gui_object = ui
-    protocol = ui.lineEdit.text().lower()
+    search_field = ui.lineEdit.text().lower() # 得到搜索字段的小写
     filterlist = para.filterlist = []
-    if protocol in ['tcp', 'udp', 'icmp', 'igmp', 'ipv6', 'arp', 'rarp']:
+    if search_field in ['tcp', 'udp', 'icmp', 'igmp', 'ipv6', 'arp', 'rarp']:
+        protocol = search_field # 则搜索为协议
+
         if protocol == 'tcp':
             ui.treeWidget.clear()
             for pkt in para.packet:
@@ -1084,17 +1107,46 @@ def Filter():
                 displaygui(list_to_display(filterlist[i], i + 1), i)
 
     #输入为空，可以返回原始列表（全部包显示）
-    elif protocol == '':
+    elif search_field == '':
         ui.treeWidget.clear()
         i = 0
         for pkt in para.packet:
             displaygui(list_to_display(pkt, i + 1), i)
             i += 1
 
+    elif re.match(MACaddr, search_field): # 若输入为mac地址格式
+        ui.treeWidget.clear()
+        for pkt in para.packet:
+            if search_field in pkt[0] or search_field in pkt[1]:
+                filterlist.append(pkt)
+        total = len(filterlist)
+        for i in range(total):
+            displaygui(list_to_display(filterlist[i], i + 1), i)
+
+
+    elif re.match(IPaddr, search_field):  # 若输入为ip地址格式
+        ui.treeWidget.clear()
+        for pkt in para.packet:
+            if pkt[2] in ['ARP','RARP']:
+                if search_field in [pkt[9], pkt[11]]:
+                    filterlist.append(pkt)
+            elif pkt[2] == 'IPv6':
+                if search_field in [pkt[9], pkt[10]]:
+                    filterlist.append(pkt)
+            else:
+                if len(pkt) > 12:
+                    if search_field in [pkt[14], pkt[15]]:
+                        filterlist.append(pkt)
+                else:
+                    pass
+        total = len(filterlist)
+        for i in range(total):
+            displaygui(list_to_display(filterlist[i], i + 1), i)
+
     else:
         ui.treeWidget.clear()
         for pkt in para.packet:
-            if protocol in pkt[-3]:
+            if search_field in pkt[-3].lower():
                 filterlist.append(pkt)
         total = len(filterlist)
         for i in range(total):
