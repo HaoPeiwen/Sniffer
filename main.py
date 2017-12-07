@@ -336,8 +336,6 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
             PktDataANSI = PktDataANSI + fragments[0][34:]
             PktDataHex = PktDataHex + fragments[1][102:]
         ReassembleShow(PktDataHex, PktDataANSI, count)
-        #print (PktDataHex)
-        #print (PktDataANSI)
 
 
     def AddIface(self): # 在列表中添加网卡名
@@ -1145,17 +1143,17 @@ def displaygui(showlist, rank):
     elif showlist[3] == 'UDP':
         brush = QtGui.QBrush(QtGui.QColor(179, 205, 227))
         brush.setStyle(QtCore.Qt.SolidPattern)
-    elif showlist[3] == 'ARP':
+    elif showlist[3] in ['ARP','RARP']:
         brush = QtGui.QBrush(QtGui.QColor(204, 235, 197))
         brush.setStyle(QtCore.Qt.SolidPattern)
-    elif showlist[3] == 'IPv6':
+    elif showlist[3] in ['IPv6','ICMPv6']:
         brush = QtGui.QBrush(QtGui.QColor(222, 203, 228))
         brush.setStyle(QtCore.Qt.SolidPattern)
-    elif showlist[3] == 'ICMP':
-        brush = QtGui.QBrush(QtGui.QColor(251, 180, 174))
+    elif showlist[3] in ['ICMP', 'IGMP']:
+        brush = QtGui.QBrush(QtGui.QColor(255, 255, 155))
         brush.setStyle(QtCore.Qt.SolidPattern)
     else:
-        brush = QtGui.QBrush(QtGui.QColor(255, 255, 155))
+        brush = QtGui.QBrush(QtGui.QColor(251, 180, 174))
         brush.setStyle(QtCore.Qt.SolidPattern)
 
     for item in showlist:
