@@ -25,6 +25,7 @@ class Parameter():
         self.packet = [] # 所有抓到包的二维列表
         self.showpacket = [] # 每次显示的一个包
         self.filterlist = [] # 过滤后显示的包
+        self.SearchFlag = 0 # 如果点击搜索则为1，显示列表用filterlist，点击返回或不操作为0，显示列表用packet
     
     def reinitial(self):
         self.RANK = 0  # 当前包最大索引数
@@ -38,6 +39,7 @@ class Parameter():
         self.packet = []  # 所有抓到包的二维列表
         self.showpacket = []  # 每次显示的一个包
         self.filterlist = []
+        self.SearchFlag = 0
 
 #输出适配器列表
 para = Parameter() # 实例调用
@@ -138,8 +140,6 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         self.listWidget_Protocol.setGeometry(QtCore.QRect(0, 0, 501, 241))
         self.listWidget_Protocol.setObjectName("listWidget_Protocol")
         item = QtWidgets.QListWidgetItem()
-        font = QtGui.QFont()
-        font.setPointSize(10)
         item.setFont(font)
         self.listWidget_Protocol.addItem(item)
         self.tabWidget_Details.addTab(self.tab_Protocol, "")
@@ -162,11 +162,6 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         self.tab_HEX.setObjectName("tab_HEX")
         self.textBrowser_HEX = QtWidgets.QTextBrowser(self.tab_HEX)
         self.textBrowser_HEX.setGeometry(QtCore.QRect(0, 0, 651, 241))
-        font = QtGui.QFont()
-        font.setFamily("Consolas")
-        font.setBold(False)
-        font.setPixelSize(15)
-        font.setWeight(50)
         self.textBrowser_HEX.setFont(font)
         self.textBrowser_HEX.setObjectName("textBrowser_HEX")
         self.tabWidget_Reassemble.addTab(self.tab_HEX, "")
@@ -174,11 +169,6 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         self.tab_GBK.setObjectName("tab_GBK")
         self.textBrowser_GBK = QtWidgets.QTextBrowser(self.tab_GBK)
         self.textBrowser_GBK.setGeometry(QtCore.QRect(0, 0, 651, 241))
-        font = QtGui.QFont()
-        font.setFamily("Consolas")
-        font.setBold(False)
-        font.setPixelSize(15)
-        font.setWeight(50)
         self.textBrowser_GBK.setFont(font)
         self.textBrowser_GBK.setObjectName("textBrowser_GBK")
         self.tabWidget_Reassemble.addTab(self.tab_GBK, "")
@@ -186,11 +176,6 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         self.tab_UTF8.setObjectName("tab_UTF8")
         self.textBrowser_UTF8 = QtWidgets.QTextBrowser(self.tab_UTF8)
         self.textBrowser_UTF8.setGeometry(QtCore.QRect(0, 0, 651, 241))
-        font = QtGui.QFont()
-        font.setFamily("Consolas")
-        font.setBold(False)
-        font.setPixelSize(15)
-        font.setWeight(50)
         self.textBrowser_UTF8.setFont(font)
         self.textBrowser_UTF8.setObjectName("textBrowser_UTF8")
         self.tabWidget_Reassemble.addTab(self.tab_UTF8, "")
@@ -330,28 +315,30 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         # 首先分析哪些相关包能够重组
         ## Open the capture file
         pkt_index = int(self.treeWidget.selectedItems()[0].text(0))  -1 # 得到索引值
-        if self.lineEdit.text() == '':
-            id = para.packet[pkt_index][7]
+        
+        if para.SearchFlag == 0:
+            id = para.packet[pkt_index][7] # 标识
         else:
             id = para.filterlist[pkt_index][7]
         PktDataHex = ""
-        #print (id)
         PktLst = []
         PktDataANSI = ""
+        count = 0
         for packets in para.packet:
             if (len(packets)<8):
                 pass
             elif ((packets[2] == "IPv4" )and (packets[7] == id )):
-                print(packets[7])
+                count += 1
                 PktLst.append((packets[-3],packets[-4],packets[10]))
         PktLst = sorted(PktLst, key=lambda x: int(x[2]))
         ##加工一下
         for fragments in PktLst:
             PktDataANSI = PktDataANSI + fragments[0][34:]
             PktDataHex = PktDataHex + fragments[1][102:]
-        return [PktDataHex, PktDataANSI]
+        ReassembleShow(PktDataHex, PktDataANSI, count)
         #print (PktDataHex)
         #print (PktDataANSI)
+
 
     def AddIface(self): # 在列表中添加网卡名
         _translate = QtCore.QCoreApplication.translate
@@ -365,7 +352,7 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         self.listWidget.clear()
         self.listWidget_IP.clear()
         self.listWidget_Protocol.clear()
-        if self.lineEdit.text() == '':
+        if para.SearchFlag == 0:
             pktlis = para.packet
         else:
             pktlis = para.filterlist
@@ -907,6 +894,7 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
 
 
 def backsearch():
+    para.SearchFlag = 0
     ui.treeWidget.clear()
     ui.lineEdit.clear()
     i = 0
@@ -921,12 +909,56 @@ def SniffStop():
     print("抓包已停止，可以重新开始抓包")
 
 
+def ReassembleShow(PktDataHex, PktDataANSI, Count):
+    listHex = PktDataHex
+    listANSI = PktDataANSI
+    if Count < 1:
+        string_op = 'NULL'
+    else:
+        string_op = '当前字段由%d个包重组\n' % Count
+        row = int(len(listANSI) / 16)
+        if len(listANSI) % 16 != 0: # 如果刚好整除则不需要加一排
+            row += 1
+        for i in range(row):
+            #得到0000，0010...
+            rowi = 16 * i
+            title = hex(rowi)[2:]
+            while len(title) < 4:
+                title = '0' + title
+            string_op += (title + '  ')
+            if i != row - 1:
+                string_op += listHex[3 * rowi:3 * (rowi + 8)]
+                string_op += ' '
+                string_op += listHex[3 * (rowi + 8):3 * (rowi + 16)]
+                string_op += '     '
+                string_op += listANSI[rowi:rowi + 8]
+                string_op += ' '
+                string_op += listANSI[rowi + 8:rowi + 16]
+                string_op += '\n'
+            else:
+                reminder = len(listANSI) - 16 * (row - 1)
+                if reminder <= 8:
+                    string_op += listHex[3 * rowi:3 * (rowi + 8)]
+                    string_op += ' ' * ((16 - reminder) * 3 + 6)
+                    string_op += listANSI[rowi:rowi + 8]
+                else:
+                    string_op += listHex[3 * rowi:3 * (rowi + 8)]
+                    string_op += ' '
+                    string_op += listHex[3 * (rowi + 8):3 * (rowi + 16)]
+                    string_op += ' ' * ((16 - reminder) * 3 + 5)
+                    string_op += listANSI[rowi:rowi + 8]
+                    string_op += ' '
+                    string_op += listANSI[rowi + 8:rowi + 16]
+    ui.textBrowser_HEX.setText(string_op)
+
+
 def ShowString(pktlist, pktindex):
     listHex = pktlist[pktindex][-4]
     listANSI = pktlist[pktindex][-3]
-
-    row = int(len(listANSI)/16)+1
     string_op = ''
+    row = int(len(listANSI)/16)
+    if len(listANSI) % 16 != 0:  # 如果刚好整除则不需要加一排
+        row += 1
     for i in range(row):
         #得到0000，0010...
         rowi = 16*i
@@ -1069,7 +1101,7 @@ def threadlisten(): #开启一个线程抓包
         ui.treeWidget.clear()
         para.ListenFlag = 1
         Process.start()
-        
+
 
 #抓包函数
 def ListenDevice():
@@ -1132,9 +1164,8 @@ def displaygui(showlist, rank):
         gui_object.treeWidget.topLevelItem(rank).setBackground(item_num,brush)
         item_num += 1
 
+
 #搜索过滤函数
-
-
 def Filter():
     MACaddr = re.compile(r'([A-Fa-f0-9]{2}-){5}[A-Fa-f0-9]{2}')
     IPaddr = re.compile(
@@ -1142,7 +1173,10 @@ def Filter():
     gui_object = ui
     search_field = ui.lineEdit.text().lower()  # 得到搜索字段的小写
     filterlist = para.filterlist = []
-    if search_field in ['tcp', 'udp', 'icmp', 'igmp', 'ipv6', 'arp', 'rarp']:
+    if search_field != '':
+        para.SearchFlag = 1 # 显示搜索列表
+        para.ListenFlag = 0 # 停止抓包
+    if search_field in ['tcp', 'udp', 'icmp', 'igmp', 'ipv6', 'arp', 'rarp', 'icmpv6']:
         protocol = search_field  # 则搜索为协议
         if protocol == 'tcp':
             ui.treeWidget.clear()
@@ -1184,6 +1218,15 @@ def Filter():
             ui.treeWidget.clear()
             for pkt in para.packet:
                 if pkt[2] == 'IPv6':
+                    filterlist.append(pkt)
+            total = len(filterlist)
+            for i in range(total):
+                displaygui(list_to_display(filterlist[i], i + 1), i)
+        
+        elif protocol == 'icmpv6':
+            ui.treeWidget.clear()
+            for pkt in para.packet:
+                if pkt[11] == 'ICMPv6':
                     filterlist.append(pkt)
             total = len(filterlist)
             for i in range(total):
@@ -1257,7 +1300,6 @@ def PacketFilter(filter='tcp'.encode('utf-8')):
     fcode = bpf_program()
     netmask = 0xffffff
     #filter = "tcp"
-
     ## compile the filter
     if pcap_compile(para.fp, byref(fcode), filter, 1, netmask) < 0:
         print('\nerror compiling filter: wrong syntax.\n')
