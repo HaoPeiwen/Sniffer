@@ -24,7 +24,7 @@ class Parameter():
         self.NtwkIf = [] # 网卡列表
         self.packet = [] # 所有抓到包的二维列表
         self.showpacket = [] # 每次显示的一个包
-        self.filterlist = []
+        self.filterlist = [] # 过滤后显示的包
     
     def reinitial(self):
         self.RANK = 0  # 当前包最大索引数
@@ -233,7 +233,7 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         self.comboBox.currentIndexChanged.connect(ChangeIface)
         self.treeWidget.itemClicked.connect(self.ShowDetails)
         self.pushButton_save.clicked.connect(self.SavePacket2File)
-        #self.pushButton_return.clicked.connect(backsearch)
+        self.pushButton_return.clicked.connect(backsearch)
         self.pushButton_reassemble.clicked.connect(self.resembleFragments)
         QtCore.QMetaObject.connectSlotsByName(SnifferGUI)
 
@@ -797,6 +797,16 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         else:
             pass
 
+
+def backsearch():
+    ui.treeWidget.clear()
+    ui.lineEdit.clear()
+    i = 0
+    for pkt in para.packet:
+        displaygui(list_to_display(pkt, i + 1), i)
+        i += 1
+
+
 def SniffStop():
     para.ListenFlag = 0
     Process.join()
@@ -1003,81 +1013,92 @@ def displaygui(showlist, rank):
         item_num += 1
 
 #搜索过滤函数
+
+
 def Filter():
     gui_object = ui
     protocol = ui.lineEdit.text().lower()
     filterlist = para.filterlist = []
+    if protocol in ['tcp', 'udp', 'icmp', 'igmp', 'ipv6', 'arp', 'rarp']:
+        if protocol == 'tcp':
+            ui.treeWidget.clear()
+            for pkt in para.packet:
+                if len(pkt) == 36:
+                    filterlist.append(pkt)
+            total = len(filterlist)
+            for i in range(total):
+                displaygui(list_to_display(filterlist[i], i + 1), i)
 
-    if protocol =='tcp':
-        ui.treeWidget.clear()
-        for pkt in para.packet:
-            if len(pkt) == 36:
-                filterlist.append(pkt)
-        total = len(filterlist)
-        for i in range(total):
-            displaygui(list_to_display(filterlist[i], i+1), i)
+        elif protocol == 'udp':
+            ui.treeWidget.clear()
+            for pkt in para.packet:
+                if len(pkt) == 25:
+                    filterlist.append(pkt)
+            total = len(filterlist)
+            for i in range(total):
+                displaygui(list_to_display(filterlist[i], i + 1), i)
 
-    elif protocol =='udp':
-        ui.treeWidget.clear()
-        for pkt in para.packet:
-            if len(pkt) == 25:
-                filterlist.append(pkt)
-        total = len(filterlist)
-        for i in range(total):
-            displaygui(list_to_display(filterlist[i], i + 1), i)
-    
-    elif protocol =='icmp':
-        ui.treeWidget.clear()
-        for pkt in para.packet:
-            if len(pkt) == 26:
-                filterlist.append(pkt)
-        total = len(filterlist)
-        for i in range(total):
-            displaygui(list_to_display(filterlist[i], i + 1), i)
+        elif protocol == 'icmp':
+            ui.treeWidget.clear()
+            for pkt in para.packet:
+                if len(pkt) == 26:
+                    filterlist.append(pkt)
+            total = len(filterlist)
+            for i in range(total):
+                displaygui(list_to_display(filterlist[i], i + 1), i)
 
-    elif protocol =='igmp':
-        ui.treeWidget.clear()
-        for pkt in para.packet:
-            if len(pkt) == 23:
-                filterlist.append(pkt)
-        total = len(filterlist)
-        for i in range(total):
-            displaygui(list_to_display(filterlist[i], i + 1), i)
-    
-    elif protocol =='ipv6':
-        ui.treeWidget.clear()
-        for pkt in para.packet:
-            if pkt[2] == 'IPv6':
-                filterlist.append(pkt)
-        total = len(filterlist)
-        for i in range(total):
-            displaygui(list_to_display(filterlist[i], i + 1), i)
-    
-    elif protocol =='arp':
-        ui.treeWidget.clear()
-        for pkt in para.packet:
-            if pkt[2] == 'ARP':
-                filterlist.append(pkt)
-        total = len(filterlist)
-        for i in range(total):
-            displaygui(list_to_display(filterlist[i], i + 1), i)
+        elif protocol == 'igmp':
+            ui.treeWidget.clear()
+            for pkt in para.packet:
+                if len(pkt) == 23:
+                    filterlist.append(pkt)
+            total = len(filterlist)
+            for i in range(total):
+                displaygui(list_to_display(filterlist[i], i + 1), i)
 
-    elif protocol =='rarp':
-        ui.treeWidget.clear()
-        for pkt in para.packet:
-            if pkt[2] == 'PARP':
-                filterlist.append(pkt)
-        total = len(filterlist)
-        for i in range(total):
-            displaygui(list_to_display(filterlist[i], i + 1), i)
-            
-    #随意输入，可以返回原始列表（全部包显示）
-    else:
+        elif protocol == 'ipv6':
+            ui.treeWidget.clear()
+            for pkt in para.packet:
+                if pkt[2] == 'IPv6':
+                    filterlist.append(pkt)
+            total = len(filterlist)
+            for i in range(total):
+                displaygui(list_to_display(filterlist[i], i + 1), i)
+
+        elif protocol == 'arp':
+            ui.treeWidget.clear()
+            for pkt in para.packet:
+                if pkt[2] == 'ARP':
+                    filterlist.append(pkt)
+            total = len(filterlist)
+            for i in range(total):
+                displaygui(list_to_display(filterlist[i], i + 1), i)
+
+        elif protocol == 'rarp':
+            ui.treeWidget.clear()
+            for pkt in para.packet:
+                if pkt[2] == 'PARP':
+                    filterlist.append(pkt)
+            total = len(filterlist)
+            for i in range(total):
+                displaygui(list_to_display(filterlist[i], i + 1), i)
+
+    #输入为空，可以返回原始列表（全部包显示）
+    elif protocol == '':
         ui.treeWidget.clear()
         i = 0
         for pkt in para.packet:
-            displaygui(list_to_display(pkt, i+1), i)
+            displaygui(list_to_display(pkt, i + 1), i)
             i += 1
+
+    else:
+        ui.treeWidget.clear()
+        for pkt in para.packet:
+            if protocol in pkt[-3]:
+                filterlist.append(pkt)
+        total = len(filterlist)
+        for i in range(total):
+            displaygui(list_to_display(filterlist[i], i + 1), i)
 
 
 #抓包过滤函数，这个函数要在运行抓包指令开始之前跑一遍
