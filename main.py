@@ -64,6 +64,80 @@ def printDevices():
         sys.exit(-1)
 
 
+class Ui_Dialog(QtWidgets.QDialog):
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+
+    def setupUi(self, Dialog):
+        Dialog.setObjectName("Dialog")
+        Dialog.resize(435, 237)
+        self.buttonBox = QtWidgets.QDialogButtonBox(Dialog)
+        self.buttonBox.setGeometry(QtCore.QRect(240, 180, 171, 41))
+        self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
+        self.buttonBox.setStandardButtons(
+            QtWidgets.QDialogButtonBox.Cancel | QtWidgets.QDialogButtonBox.Ok)
+        self.buttonBox.setObjectName("buttonBox")
+        self.groupBox_Addr = QtWidgets.QGroupBox(Dialog)
+        self.groupBox_Addr.setGeometry(QtCore.QRect(140, 10, 271, 161))
+        self.groupBox_Addr.setObjectName("groupBox_Addr")
+        self.lineEdit_src = QtWidgets.QLineEdit(self.groupBox_Addr)
+        self.lineEdit_src.setGeometry(QtCore.QRect(30, 50, 221, 21))
+        self.lineEdit_src.setObjectName("lineEdit_src")
+        self.label = QtWidgets.QLabel(self.groupBox_Addr)
+        self.label.setGeometry(QtCore.QRect(40, 30, 47, 13))
+        self.label.setObjectName("label")
+        self.lineEdit_dist = QtWidgets.QLineEdit(self.groupBox_Addr)
+        self.lineEdit_dist.setGeometry(QtCore.QRect(30, 110, 221, 21))
+        self.lineEdit_dist.setObjectName("lineEdit_dist")
+        self.label_2 = QtWidgets.QLabel(self.groupBox_Addr)
+        self.label_2.setGeometry(QtCore.QRect(40, 90, 47, 13))
+        self.label_2.setObjectName("label_2")
+        self.groupBox_Protocol = QtWidgets.QGroupBox(Dialog)
+        self.groupBox_Protocol.setGeometry(QtCore.QRect(20, 10, 101, 211))
+        self.groupBox_Protocol.setObjectName("groupBox_Protocol")
+        self.checkBox_IPv6 = QtWidgets.QCheckBox(self.groupBox_Protocol)
+        self.checkBox_IPv6.setGeometry(QtCore.QRect(20, 20, 70, 17))
+        self.checkBox_IPv6.setObjectName("checkBox_IPv6")
+        self.checkBox_TCP = QtWidgets.QCheckBox(self.groupBox_Protocol)
+        self.checkBox_TCP.setGeometry(QtCore.QRect(20, 60, 70, 17))
+        self.checkBox_TCP.setObjectName("checkBox_TCP")
+        self.checkBox_UDP = QtWidgets.QCheckBox(self.groupBox_Protocol)
+        self.checkBox_UDP.setGeometry(QtCore.QRect(20, 100, 70, 17))
+        self.checkBox_UDP.setObjectName("checkBox_UDP")
+        self.checkBox_ARP = QtWidgets.QCheckBox(self.groupBox_Protocol)
+        self.checkBox_ARP.setGeometry(QtCore.QRect(20, 140, 70, 17))
+        self.checkBox_ARP.setObjectName("checkBox_ARP")
+        self.checkBox_ICMP = QtWidgets.QCheckBox(self.groupBox_Protocol)
+        self.checkBox_ICMP.setGeometry(QtCore.QRect(20, 180, 81, 16))
+        self.checkBox_ICMP.setObjectName("checkBox_ICMP")
+
+        self.retranslateUi(Dialog)
+        self.buttonBox.accepted.connect(Dialog.accept)
+        self.buttonBox.rejected.connect(Dialog.reject)
+        QtCore.QMetaObject.connectSlotsByName(Dialog)
+
+    def retranslateUi(self, Dialog):
+        _translate = QtCore.QCoreApplication.translate
+        Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
+        self.groupBox_Addr.setTitle(_translate("Dialog", "地址"))
+        self.label.setText(_translate("Dialog", "源地址"))
+        self.label_2.setText(_translate("Dialog", "目的地址"))
+        self.groupBox_Protocol.setTitle(_translate("Dialog", "协议"))
+        self.checkBox_IPv6.setText(_translate("Dialog", "IPv6"))
+        self.checkBox_TCP.setText(_translate("Dialog", "TCP"))
+        self.checkBox_UDP.setText(_translate("Dialog", "UDP"))
+        self.checkBox_ARP.setText(_translate("Dialog", "ARP/RARP"))
+        self.checkBox_ICMP.setText(_translate("Dialog", "ICMP/IGMP"))
+
+    def handle_click(self):
+        if not self.isVisible():
+            self.show()
+
+    def handle_close(self):
+        self.close()
+
+
 class Ui_SnifferGUI(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
@@ -220,6 +294,7 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         self.pushButton_save.clicked.connect(self.SavePacket2File)
         self.pushButton_return.clicked.connect(backsearch)
         self.pushButton_reassemble.clicked.connect(self.resembleFragments)
+        #self.commandLinkButton.clicked.connect(SecondWindow)
         QtCore.QMetaObject.connectSlotsByName(SnifferGUI)
 
     def retranslateUi(self, SnifferGUI):
@@ -890,6 +965,11 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
             else:
                 pass
 
+'''
+def SecondWindow():
+    SecWin = Ui_Dialog()
+    SecWin.handle_click()
+'''
 
 def backsearch():
     para.SearchFlag = 0
@@ -1315,8 +1395,10 @@ def MainWindows():
     global ui
     app = QtWidgets.QApplication(sys.argv)
     w = QtWidgets.QMainWindow()
+    SecWin = Ui_Dialog()
     ui = Ui_SnifferGUI()
     ui.setupUi(w)
+    ui.commandLinkButton.clicked.connect(SecWin.handle_click) # 点commandLinkButton弹出第二个窗口；
     w.show()
     sys.exit(app.exec_())
     #Process.join()
