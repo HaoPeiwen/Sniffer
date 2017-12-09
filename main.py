@@ -119,7 +119,7 @@ class Ui_Dialog(QtWidgets.QDialog):
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
-        Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
+        Dialog.setWindowTitle(_translate("Dialog", "设定过滤条件"))
         self.groupBox_Addr.setTitle(_translate("Dialog", "地址"))
         self.label.setText(_translate("Dialog", "源地址"))
         self.label_2.setText(_translate("Dialog", "目的地址"))
@@ -129,6 +129,25 @@ class Ui_Dialog(QtWidgets.QDialog):
         self.checkBox_UDP.setText(_translate("Dialog", "UDP"))
         self.checkBox_ARP.setText(_translate("Dialog", "ARP/RARP"))
         self.checkBox_ICMP.setText(_translate("Dialog", "ICMP/IGMP"))
+
+    def accept(self):
+        print (self.checkBox_ARP.isChecked() and " arp or rarp or" or "")
+        FilterString = "" +  (self.checkBox_ARP.isChecked() and " arp or rarp or" or "") + \
+                       (self.checkBox_TCP.isChecked() and " tcp or" or "") + \
+                       (self.checkBox_UDP.isChecked() and " udp or" or "") + \
+                       (self.checkBox_ICMP.isChecked() and " icmp or igmp or" or "") + \
+                       (self.checkBox_IPv6.isChecked() and " (ip6) or" or "")
+        if FilterString:
+            FilterString = FilterString[:-3]
+        if self.lineEdit_src.text():
+            FilterString = "(" + FilterString + ") and (src host " + self.lineEdit_src.text() + ")"
+        if self.lineEdit_dist.text():
+            FilterString = "(" + FilterString + ") and (dst host " + self.lineEdit_dist.text() + ")"
+
+        ui.lineEdit_filter.setText(FilterString)
+        PacketFilter(FilterString)
+        self.close()
+
 
     def handle_click(self):
         if not self.isVisible():
@@ -433,6 +452,8 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         pktindex = int(self.treeWidget.selectedItems()[0].text(0)) -1 # 得到索引值
 
         ShowString(pktlis, pktindex)  # 显示string
+        # 分片页显示
+        self.textBrowser_HEX.setText("NULL")
         # Ethernet 详细信息显示：
 
         self.listWidget.addItem(QtWidgets.QListWidgetItem())
@@ -597,6 +618,10 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         elif len(pktlis[pktindex]) < 12:
             pass
         else:
+            if pktlis[pktindex][9] == 1 or pktlis[pktindex][10] !=  "0":
+                self.textBrowser_HEX.setText("此IP包有分片，请点击菜单栏“重组”查看完整内容")
+            else:
+                self.textBrowser_HEX.setText("此IP包无分片！")
             self.tabWidget_Details.setTabText(self.tabWidget_Details.indexOf(
                 self.tab_IP), _translate("SnifferGUI", "IPv4"))
             if pktlis[pktindex][12] == 'TCP': # 以后需要显示什么再说，先摆在这里
@@ -1078,6 +1103,7 @@ def ChangeIface(): # 选定网卡
         local_alldevs = local_alldevs.contents.next
     para.fp = pcap_open_live(
         local_alldevs.contents.name, 65536, 1, 1000, para.errbuf)
+
     para.DUMPFILE = pcap_dump_open(para.fp, "temp".encode("utf-8"))
 
 
@@ -1244,7 +1270,7 @@ def displaygui(showlist, rank):
 
 
 #搜索过滤函数
-def Filter():
+def Filter(filter):
     MACaddr = re.compile(r'([A-Fa-f0-9]{2}-){5}[A-Fa-f0-9]{2}')
     IPaddr = re.compile(
         r'^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)')
@@ -1374,12 +1400,13 @@ def Filter():
 
 
 #抓包过滤函数，这个函数要在运行抓包指令开始之前跑一遍
-def PacketFilter(filter='tcp'.encode('utf-8')):
+def PacketFilter(filter):
     fcode = bpf_program()
     netmask = 0xffffff
+    print(1)
     #filter = "tcp"
     ## compile the filter
-    if pcap_compile(para.fp, byref(fcode), filter, 1, netmask) < 0:
+    if pcap_compile(para.fp, byref(fcode), filter.encode("utf-8"), 1, netmask) < 0:
         print('\nerror compiling filter: wrong syntax.\n')
         pcap_close(para.fp)
         sys.exit(-3)
