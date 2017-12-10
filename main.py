@@ -139,15 +139,21 @@ class Ui_Dialog(QtWidgets.QDialog):
                        (self.checkBox_IPv6.isChecked() and " (ip6) or" or "")
         if FilterString:
             FilterString = FilterString[:-3]
-        if self.lineEdit_src.text():
-            FilterString = "(" + FilterString + ") and (src host " + self.lineEdit_src.text() + ")"
-        if self.lineEdit_dist.text():
-            FilterString = "(" + FilterString + ") and (dst host " + self.lineEdit_dist.text() + ")"
-
+            if self.lineEdit_src.text():
+                FilterString = "(" + FilterString + ") and (src host " + self.lineEdit_src.text() + ")"
+            if self.lineEdit_dist.text():
+                FilterString = "(" + FilterString + ") and (dst host " + self.lineEdit_dist.text() + ")"
+        else:
+            if self.lineEdit_src.text():
+                FilterString = "src host " + self.lineEdit_src.text()
+                FilterString = FilterString + (self.lineEdit_dist.text() and " and (dst host " + self.lineEdit_dist.text() or "")
+            elif self.lineEdit_dist.text():
+                FilterString = "dst host " + self.lineEdit_dist.text() + ""
+            else:
+                FilterString = "ip or ip6"
         ui.lineEdit_filter.setText(FilterString)
         PacketFilter(FilterString)
         self.close()
-
 
     def handle_click(self):
         if not self.isVisible():
@@ -162,7 +168,7 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         super().__init__()
         self.setupUi(self)
 
-#创建GUI窗口
+    #创建GUI窗口
     def setupUi(self, SnifferGUI):
         SnifferGUI.setObjectName("SnifferGUI")
         SnifferGUI.resize(1250, 860)
@@ -317,7 +323,7 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         #self.commandLinkButton.clicked.connect(SecondWindow)
         QtCore.QMetaObject.connectSlotsByName(SnifferGUI)
 
-#GUI窗口项目命名
+    #GUI窗口项目命名
     def retranslateUi(self, SnifferGUI):
         _translate = QtCore.QCoreApplication.translate
         SnifferGUI.setWindowTitle(_translate("SnifferGUI", "Sniffer 1.0"))
@@ -381,7 +387,7 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         self.actionpass.setText(_translate("SnifferGUI", "pass"))
         self.actionpass_2.setText(_translate("SnifferGUI", "Clear"))
         self.actionpass_2.setShortcut(_translate("SnifferGUI", "Ctrl+L"))
-#保存包文件
+
     # 将标号为n的包存储下来，命名格式为 当前时间.pcap
     def SavePacket2File(self):
         para.selectRANK = int(self.treeWidget.selectedItems()[0].text(0)) -1
@@ -407,7 +413,7 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         pcap_dump_close(para.DUMPFILE)
         pcap_close(para.fp)
 
-#Ip分片重组
+    #Ip分片重组
     def resembleFragments(self):
         # 首先分析哪些相关包能够重组
         ## Open the capture file
@@ -438,8 +444,7 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
             #PktDataGBK = PktDataANSI.encode("gbk")
         ReassembleShow(PktDataHex, PktDataANSI, count)
 
-#追踪TCP数据流
-
+    #追踪TCP数据流
     def TCPDataFlow(self):
         # 首先分析哪些相关包能够重组
         ## Open the capture file
@@ -473,28 +478,32 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         PktLst = sorted(PktLst, key=lambda x: int(x[3]))
         ##加工一下
         fp = open("nxm", "wb")
-
+        xxx = 0
         for fragments in PktLst:
+            print (xxx)
+            xxx = xxx + 1
             start = fragments[-1]*4 + 14
             PktDataANSI = PktDataANSI + fragments[0][start:]
             PktDataHex = PktDataHex + fragments[1][4 * start:]
-            PktDataOrigin = PktDataOrigin + fragments[2][start:]
+            #PktDataOrigin = PktDataOrigin + fragments[2][start:]
+            fp.write(bytes(fragments[2][start:], "latin-1"))
 
         print("写完了")
-        fp.write(bytes(PktDataOrigin,"latin-1"))
-        print (PktDataOrigin)
+
         PktDataGBK = PktDataOrigin.encode("latin-1").decode("gbk",'ignore')
         #显示TCP流函数 (PktDataHex, PktDataANSI,PktDataGBK, count)
         #ReassembleShow(PktDataHex, PktDataANSI,PktDataGBK, count)
         print("关闭文件了,存在当前目录下的nxm文件里了")
         #
         fp.close()
-        return [PktDataHex,PktDataANSI,PktDataGBK]
+        #return [PktDataHex,PktDataANSI,PktDataGBK]
 
 
 
         #添加网卡名
-    def AddIface(self): # 在列表中添加网卡名
+
+    # 在列表中添加网卡名
+    def AddIface(self):
         _translate = QtCore.QCoreApplication.translate
         count = 1
         for inface in para.NtwkIf:
@@ -770,6 +779,8 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
                     self.textBrowser_HEX.setText("FTP，点击上方数据流重建可以展示完整数据流")
                 elif (pktlis[pktindex][18] == 80 or pktlis[pktindex][17] == 80):
                     self.textBrowser_HEX.setText("HTTP，点击上方数据流重建可以展示完整数据流")
+                elif (pktlis[pktindex][17] == 443):
+                    self.textBrowser_HEX.setText("TLS，安全套接字SSL加密传输，不建议重组！")
                 else:
                     self.textBrowser_HEX.setText("不属于TELNET、FTP控制、HTTP的TCP数据流，点击上方数据流重建可以展示完整数据流")
                 #FTP
@@ -1082,7 +1093,8 @@ def backsearch():
 #停止抓包
 def SniffStop():
     para.ListenFlag = 0
-    Process.join()
+    para.Process.join()
+
     print("抓包已停止，可以重新开始抓包")
 
 #分片重组显示
@@ -1177,7 +1189,7 @@ def ChangeIface(): # 选定网卡
         local_alldevs = local_alldevs.contents.next
     para.fp = pcap_open_live(
         local_alldevs.contents.name, 65536, 1, 1000, para.errbuf)
-
+    #pcap_setbuff(para.fp,65536)
     para.DUMPFILE = pcap_dump_open(para.fp, "temp".encode("utf-8"))
 
 #显示上方窗口内容
@@ -1214,7 +1226,11 @@ def list_to_display(lista,Num):  # 显示上面窗口的src，dst，prt，len等
     else:
         if len(lista)>12:
             if lista[12] == 'UDP':
-                listdisplay = [str(lista[i]) for i in [14, 15, 12]]
+                listdisplay = [str(lista[i]) for i in [14, 15]]
+                if (lista[17] == 8000 or lista[17] == 4000 or lista[18] == 4000 or lista[18] == 8000):
+                    listdisplay.append("OICQ")
+                else :
+                    listdisplay.append(lista[12])
                 listdisplay.append(lista[-1])  # 长度
                 listdisplay.append(lista[-2][:11])  # 日期
                 listdisplay.append(lista[-2][11:24])  # 时间
@@ -1223,22 +1239,60 @@ def list_to_display(lista,Num):  # 显示上面窗口的src，dst，prt，len等
                 listdisplay = [str(lista[i]) for i in [14, 15]]
                 if (lista[17] == 23 or lista[18] == 23):
                     listdisplay.append("TELNET")
+                    listdisplay.append(lista[-1])  # 长度
+                    listdisplay.append(lista[-2][:11])  # 日期
+                    listdisplay.append(lista[-2][11:24])  # 时间
+                    listdisplay.append(str(lista[17]) + "->" + str(lista[18]) + "   Seq=" + str(lista[19]) + "  Ack=" + str(lista[20]))
                 elif (lista[17] == 80 or lista[18] == 80):
                     listdisplay.append("HTTP")
+                    listdisplay.append(lista[-1])  # 长度
+                    listdisplay.append(lista[-2][:11])  # 日期
+                    listdisplay.append(lista[-2][11:24])  # 时间
+                    listdisplay.append(str(lista[17]) + "->" + str(lista[18]) + "   Seq=" + str(lista[19]) + "  Ack=" + str(lista[20]))
                 elif (lista[17] == 21):
                     listdisplay.append("FTP")
+                    listdisplay.append(lista[-1])  # 长度
+                    listdisplay.append(lista[-2][:11])  # 日期
+                    listdisplay.append(lista[-2][11:24])  # 时间
+                    listdisplay.append(str(lista[17]) + "->" + str(lista[18]) + "   Seq=" + str(lista[19]) + "  Ack=" + str(lista[20]))
+                elif (lista[17] == 443):
+                    listdisplay.append("TLS")
+                    listdisplay.append(lista[-1])  # 长度
+                    listdisplay.append(lista[-2][:11])  # 日期
+                    listdisplay.append(lista[-2][11:24])  # 时间
+                    listdisplay.append("应用数据")
+                elif (lista[17] == 8000 or lista[17] == 4000 or lista[17] == 4000 or lista[17] == 8000):
+                    listdisplay.append("OICQ")
+                    listdisplay.append(lista[-1])  # 长度
+                    listdisplay.append(lista[-2][:11])  # 日期
+                    listdisplay.append(lista[-2][11:24])  # 时间
+                    listdisplay.append("OICQ协议数据")
                 else:
                     listdisplay.append("TCP")
-                listdisplay.append(lista[-1])  # 长度
-                listdisplay.append(lista[-2][:11])  # 日期
-                listdisplay.append(lista[-2][11:24])  # 时间
-                listdisplay.append(str(lista[17])+"->"+str(lista[18])+"   Seq=" + str(lista[19]) +"  Ack=" + str(lista[20]))
+                    listdisplay.append(lista[-1])  # 长度
+                    listdisplay.append(lista[-2][:11])  # 日期
+                    listdisplay.append(lista[-2][11:24])  # 时间
+                    listdisplay.append(str(lista[17]) + "->" + str(lista[18]) + "   Seq=" + str(lista[19]) + "  Ack=" + str(lista[20]))
+
             elif lista[12]  =='IGMP':
                 listdisplay = [str(lista[i]) for i in [14, 15, 12]]
                 listdisplay.append(lista[-1])  # 长度
                 listdisplay.append(lista[-2][:11])  # 日期
                 listdisplay.append(lista[-2][11:24])  # 时间
-                listdisplay.append('IGMP')
+                if (lista[17] == '16'):
+                    listdisplay.append(lista[14] + "申请加入多播组" + lista[20] + "（组成员报告，IGMPv2）")
+                elif (lista[17] == '12'):
+                    listdisplay.append(lista[14] + "申请加入多播组" + lista[20] + "（组成员报告，IGMPv1）")
+                elif (lista[17] == '17'):
+                    listdisplay.append(lista[14] + "离开多播组" + lista[20])
+                elif (lista[17] == '11'):
+                    listdisplay.append(lista[14] + "向多播组"+ lista[20] + "的查询")
+                elif (lista[17] == '2203'):
+                    listdisplay.append(lista[14] + "申请离开多播组" + lista[20] + "(ICMPv3)")
+                elif (lista[17] == '2204'):
+                    listdisplay.append(lista[14] + "申请加入多播组" + lista[20] + "(ICMPv3)")
+                else:
+                    listdisplay.append("其他未知的IGMP操作类型：" + lista[17])
             elif lista[12] == 'ICMP' and lista[17]!= '分片包':
                 listdisplay = [str(lista[i]) for i in [14, 15, 12]]
                 listdisplay.append(lista[-1])  # 长度
@@ -1263,7 +1317,6 @@ def list_to_display(lista,Num):  # 显示上面窗口的src，dst，prt，len等
                 listdisplay.append(lista[-2][:11])  # 日期
                 listdisplay.append(lista[-2][11:24])  # 时间
                 listdisplay.append('未识别的编号为' + lista[12] + "的传输层协议！")
-
         else:
             listdisplay = ['无法识别','','']
             listdisplay.append(lista[-1])  # 长度
@@ -1276,17 +1329,16 @@ def list_to_display(lista,Num):  # 显示上面窗口的src，dst，prt，len等
 
 #抓包线程
 def threadlisten(): #开启一个线程抓包
-    global Process
-    Process = threading.Thread(target=ListenDevice)
+    #global Process
+    #Process = threading.Thread(target=ListenDevice)
     if para.ListenFlag == 1:
-        Process.start()
+        para.Process.start()
     else:
         para.reinitial()
         ChangeIface()
         ui.treeWidget.clear()
         para.ListenFlag = 1
-        Process.start()
-
+        para.Process.start()
 
 #抓包函数
 def ListenDevice():
@@ -1299,10 +1351,11 @@ def ListenDevice():
                 break
             time1 = str(time.strftime("%Y-%m-%d %H:%M:%S.",time.localtime(para.header.contents.ts.tv_sec))) + str("%d" %(para.header.contents.ts.tv_usec))
             length = str("%ld" %(para.header.contents.len))
+            #for i in range(para.header.contents.len):
+
             para.showpacket = etherPacketLoop(para.pkt_data, para.header.contents.len)
             para.showpacket.append(time1)  # 加一个时间，年月日秒
             para.showpacket.append(length) # 加一个总帧长
-            #para.showpacket.append(para.RANK)
             para.packet.append(para.showpacket)
             #packet为格式化的包
             #下一步来个显示函数
@@ -1317,7 +1370,6 @@ def ListenDevice():
     pcap_dump_close(para.DUMPFILE)
     pcap_close(para.fp)
     sys.exit(-1)
-
 
 def displaygui(showlist, rank):
     gui_object = ui
@@ -1339,7 +1391,7 @@ def displaygui(showlist, rank):
     elif showlist[3] in ['ICMP', 'IGMP']:
         brush = QtGui.QBrush(QtGui.QColor(255, 255, 155))
         brush.setStyle(QtCore.Qt.SolidPattern)
-    #HTTP，FTP，TELNET
+    #HTTP，FTP，TELNET，TLS,OICQ
     else:
         brush = QtGui.QBrush(QtGui.QColor(251, 180, 174))
         brush.setStyle(QtCore.Qt.SolidPattern)
@@ -1349,7 +1401,6 @@ def displaygui(showlist, rank):
             item_num, QtCore.QCoreApplication.translate("SnifferGUI", item))
         gui_object.treeWidget.topLevelItem(rank).setBackground(item_num,brush)
         item_num += 1
-
 
 #搜索过滤函数
 def Filter(filter):
@@ -1501,6 +1552,8 @@ def PacketFilter(filter):
 
 def MainWindows():
     global ui
+    #para.queue = multiprocessing.Queue()
+    para.Process = threading.Thread(target=ListenDevice)#,name = "抓包" ,args=(para.queue,))
     app = QtWidgets.QApplication(sys.argv)
     w = QtWidgets.QMainWindow()
     SecWin = Ui_Dialog()

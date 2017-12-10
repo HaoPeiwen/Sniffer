@@ -691,6 +691,7 @@ def ICMPv6PacketLoop(pkt_data, len, begin):
             icmp_dataANSI = icmp_dataANSI + chr(pkt_data[i])
         else:
             icmp_dataANSI = icmp_dataANSI + '.'
+
     packet.append(icmp_data)
     packet.append(icmp_dataANSI)
     return packet
@@ -702,6 +703,10 @@ def IGMPPacketLoop(pkt_data, len, begin):
     igmp_type =  "%.2x" % (pkt_data[begin])
     #操作类型----------------------------------------17
 
+    if (igmp_type == "22"):
+        igmp_type = igmp_type + "%.2x" % (pkt_data[begin + 8])
+    packet.append(igmp_type)
+    '''
     if (igmp_type =="11"):
         packet.append("成员关系查询")
     elif (igmp_type =="12"):
@@ -710,11 +715,11 @@ def IGMPPacketLoop(pkt_data, len, begin):
         packet.append("IGMPv2成员报告")
     elif (igmp_type =="17"):
         packet.append("成员离开组")
-    elif (igmp_type =="22"):
+    elif (igmp_type =="22"):  03离开  04加入
         packet.append("IGMPv3成员关系报告")
     else:
         packet.append("未知操作")
-
+    '''
     #z最大响应时间----------------------------------------18
     tmp = "%.2x" % (pkt_data[begin + 1])
     igmp_rspTime = int(tmp,16)
@@ -728,7 +733,7 @@ def IGMPPacketLoop(pkt_data, len, begin):
 
     #组地址----------------------------------------20
     igmp_add = ""
-    if (igmp_type == "22"):
+    if (igmp_type[:2] == "22"):
         for i in range(3):
             igmp_add = igmp_add + "%d." % (pkt_data[begin + 12 + i])
         igmp_add = igmp_add + ("%d" % pkt_data[begin + 15])
@@ -896,28 +901,15 @@ def TCPPacketLoop(pkt_data, len, begin):
     packet.append(th_data)'''
     th_data = ""
     th_data_ANSI = ""
-    uh_data = ""
-    uh_dataANSI = ""
+    dataOrigin = ""
     for i in range(len):
         th_data = th_data + "%.2x " % (pkt_data[i])
+        dataOrigin = dataOrigin + chr(pkt_data[i])
         if (pkt_data[i] > 31 and pkt_data[i] < 127):
             th_data_ANSI = th_data_ANSI + chr(pkt_data[i])
         else:
             th_data_ANSI = th_data_ANSI + '.'
-    '''
-    for i in range(len):
-        if (i % 16 == 0):
-            if( i != 0):
-                th_data = th_data + "\n"
-            th_data = th_data + "%.4x  " % (i)
-        th_data = th_data + "%.2x " % (pkt_data[i])
-        if (pkt_data[i]>31 and pkt_data[i]<127):
-            th_data_ANSI = th_data_ANSI + chr(pkt_data[i])
-        else :
-            th_data_ANSI = th_data_ANSI + '.'
-        if (i % 16 == 7):
-            th_data_ANSI = th_data_ANSI + ' '
-            th_data = th_data + "'''
+    packet.append(dataOrigin)
     packet.append(th_data)
     packet.append(th_data_ANSI)
     return packet
