@@ -3,8 +3,12 @@ from PyQt5 import QtCore, QtWidgets, QtGui
 from ctypes import *
 from winpcapy import *
 from readPackets import *
+from ansi2html import *
+from converter import *
 
+from PyQt5.QtWidgets import QMessageBox
 #pyuic5 -o s.py sniffergui.ui
+
 
 class Parameter():
     #常量定义
@@ -47,7 +51,6 @@ para = Parameter() # 实例调用
 #打印设备函数
 def printDevices():
     if (pcap_findalldevs(byref(para.alldevs), para.errbuf) == -1):
-        print("寻找适配器出错: %s\n", para.errbuf.value)
         sys.exit(1)
     ## Print the list
     d = para.alldevs.contents
@@ -60,7 +63,7 @@ def printDevices():
         else:
              d = False
     if (para.deviceNumber == 0):
-        print("\n没有找到相关的网络接口，请确保WinPcap已经安装！\n")
+
         sys.exit(-1)
 
 
@@ -68,6 +71,7 @@ class Ui_Dialog(QtWidgets.QDialog):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
+
 
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
@@ -131,7 +135,6 @@ class Ui_Dialog(QtWidgets.QDialog):
         self.checkBox_ICMP.setText(_translate("Dialog", "ICMP/IGMP"))
 
     def accept(self):
-        print (self.checkBox_ARP.isChecked() and " arp or rarp or" or "")
         FilterString = "" +  (self.checkBox_ARP.isChecked() and " arp or rarp or" or "") + \
                        (self.checkBox_TCP.isChecked() and " tcp or" or "") + \
                        (self.checkBox_UDP.isChecked() and " udp or" or "") + \
@@ -208,6 +211,9 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         self.pushButton_reassemble = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_reassemble.setGeometry(QtCore.QRect(770, 20, 71, 23))
         self.pushButton_reassemble.setObjectName("pushButton_reassemble")
+        self.pushButton_TCPstream = QtWidgets.QPushButton(self.centralwidget)
+        self.pushButton_TCPstream.setGeometry(QtCore.QRect(870, 20, 71, 23))
+        self.pushButton_TCPstream.setObjectName("pushButton_TCPstream")
         self.commandLinkButton = QtWidgets.QCommandLinkButton(self.centralwidget)
         self.commandLinkButton.setGeometry(QtCore.QRect(560, 50, 90, 41))
         self.commandLinkButton.setObjectName("commandLinkButton")
@@ -271,7 +277,16 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         self.textBrowser_GBK.setGeometry(QtCore.QRect(0, 0, 651, 241))
         self.textBrowser_GBK.setFont(font)
         self.textBrowser_GBK.setObjectName("textBrowser_GBK")
+        self.textBrowser_GBK.setWordWrapMode(QtGui.QTextOption.NoWrap)
         self.tabWidget_Reassemble.addTab(self.tab_GBK, "")
+        self.tab_ANSI = QtWidgets.QWidget()
+        self.tab_ANSI.setObjectName("tab_ANSI")
+        self.textBrowser_ANSI = QtWidgets.QTextBrowser(self.tab_ANSI)
+        self.textBrowser_ANSI.setGeometry(QtCore.QRect(0, 0, 651, 241))
+        self.textBrowser_ANSI.setFont(font)
+        self.textBrowser_ANSI.setObjectName("textBrowser_ANSI")
+        self.textBrowser_ANSI.setWordWrapMode(QtGui.QTextOption.NoWrap)
+        self.tabWidget_Reassemble.addTab(self.tab_ANSI, "")
         self.tab_UTF8 = QtWidgets.QWidget()
         self.tab_UTF8.setObjectName("tab_UTF8")
         self.textBrowser_UTF8 = QtWidgets.QTextBrowser(self.tab_UTF8)
@@ -279,6 +294,14 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         self.textBrowser_UTF8.setFont(font)
         self.textBrowser_UTF8.setObjectName("textBrowser_UTF8")
         self.tabWidget_Reassemble.addTab(self.tab_UTF8, "")
+        self.tab_PRT = QtWidgets.QWidget()
+        self.tab_PRT.setObjectName("tab_PRT")
+        self.textBrowser_PRT = QtWidgets.QTextBrowser(self.tab_PRT)
+        self.textBrowser_PRT.setGeometry(QtCore.QRect(0, 0, 651, 241))
+        self.textBrowser_PRT.setFont(font)
+        self.textBrowser_PRT.setObjectName("textBrowser_PRT")
+        self.textBrowser_PRT.setWordWrapMode(QtGui.QTextOption.NoWrap)
+        self.tabWidget_Reassemble.addTab(self.tab_PRT, "")
         SnifferGUI.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(SnifferGUI)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 1250, 23))
@@ -320,6 +343,7 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         self.pushButton_save.clicked.connect(self.SavePacket2File)
         self.pushButton_return.clicked.connect(backsearch)
         self.pushButton_reassemble.clicked.connect(self.resembleFragments)
+        self.pushButton_TCPstream.clicked.connect(self.TCPDataFlow)
         #self.commandLinkButton.clicked.connect(SecondWindow)
         QtCore.QMetaObject.connectSlotsByName(SnifferGUI)
 
@@ -339,6 +363,7 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         self.commandLinkButton.setText(_translate("SnifferGUI", "包过滤"))
         self.pushButton_save.setText(_translate("SnifferGUI", "保存"))
         self.pushButton_reassemble.setText(_translate("SnifferGUI", "重组"))
+        self.pushButton_TCPstream.setText(_translate("SnifferGUI", "追踪TCP流"))
         self.treeWidget.headerItem().setText(0, _translate("SnifferGUI", "编号"))
         self.treeWidget.headerItem().setText(1, _translate("SnifferGUI", "源IP地址"))
         self.treeWidget.headerItem().setText(2, _translate("SnifferGUI", "目的IP地址"))
@@ -372,11 +397,15 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         self.tabWidget_Reassemble.setTabText(self.tabWidget_Reassemble.indexOf(self.tab_String),
                                              _translate("SnifferGUI", "内容"))
         self.tabWidget_Reassemble.setTabText(self.tabWidget_Reassemble.indexOf(self.tab_HEX),
-                                             _translate("SnifferGUI", "<HEX重组>"))
+                                             _translate("SnifferGUI", "<HEX>"))
         self.tabWidget_Reassemble.setTabText(self.tabWidget_Reassemble.indexOf(self.tab_GBK),
-                                             _translate("SnifferGUI", "<GBK编码>"))
+                                             _translate("SnifferGUI", "<GBK>"))
         self.tabWidget_Reassemble.setTabText(self.tabWidget_Reassemble.indexOf(self.tab_UTF8),
-                                             _translate("SnifferGUI", "<UTF-8重组>"))
+                                             _translate("SnifferGUI", "<ASCII>"))
+        self.tabWidget_Reassemble.setTabText(self.tabWidget_Reassemble.indexOf(self.tab_ANSI),
+                                             _translate("SnifferGUI", "<ANSI>"))
+        self.tabWidget_Reassemble.setTabText(self.tabWidget_Reassemble.indexOf(self.tab_PRT),
+                                             _translate("SnifferGUI", "<格式化>"))
         self.menu_files.setTitle(_translate("SnifferGUI", "文件"))
         self.menu_edit.setTitle(_translate("SnifferGUI", "编辑"))
         self.menu_tools.setTitle(_translate("SnifferGUI", "工具"))
@@ -435,7 +464,6 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
                 PktLst.append((packets[-3],packets[-4],packets[10],packets[4]))
         PktLst = sorted(PktLst, key=lambda x: int(x[2]))
         ##加工一下
-        print()
         for fragments in PktLst:
             #考虑一下选项吧那就！
             start = fragments[-1] * 4 + 14
@@ -478,29 +506,28 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         PktLst = sorted(PktLst, key=lambda x: int(x[3]))
         ##加工一下
         fp = open("nxm", "wb")
-        xxx = 0
         for fragments in PktLst:
-            print (xxx)
-            xxx = xxx + 1
             start = fragments[-1]*4 + 14
             PktDataANSI = PktDataANSI + fragments[0][start:]
             PktDataHex = PktDataHex + fragments[1][4 * start:]
-            #PktDataOrigin = PktDataOrigin + fragments[2][start:]
+            PktDataOrigin = PktDataOrigin + fragments[2][start:]
             fp.write(bytes(fragments[2][start:], "latin-1"))
 
-        print("写完了")
-
         PktDataGBK = PktDataOrigin.encode("latin-1").decode("gbk",'ignore')
-        #显示TCP流函数 (PktDataHex, PktDataANSI,PktDataGBK, count)
-        #ReassembleShow(PktDataHex, PktDataANSI,PktDataGBK, count)
-        print("关闭文件了,存在当前目录下的nxm文件里了")
-        #
+
+        conv = Ansi2HTMLConverter()
+        PktDataHtml = conv.convert(PktDataGBK)
+        PktDataHtml = str.replace(PktDataHtml,"\n</span>", "</span>")
+
+
+        ui.textBrowser_HEX.setText(PktDataHex)
+        ui.textBrowser_UTF8.setText(PktDataANSI)
+        ui.textBrowser_GBK.setText(PktDataGBK)
+        ui.textBrowser_ANSI.setText(PktDataOrigin)
+        ui.textBrowser_PRT.setHtml(PktDataHtml)
         fp.close()
-        #return [PktDataHex,PktDataANSI,PktDataGBK]
 
-
-
-        #添加网卡名
+        #添加网卡名0
 
     # 在列表中添加网卡名
     def AddIface(self):
@@ -1075,11 +1102,7 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
             else:
                 pass
 #第二窗口注释
-'''
-def SecondWindow():
-    SecWin = Ui_Dialog()
-    SecWin.handle_click()
-'''
+
 #返回搜索
 def backsearch():
     para.SearchFlag = 0
@@ -1095,7 +1118,7 @@ def SniffStop():
     para.ListenFlag = 0
     para.Process.join()
 
-    print("抓包已停止，可以重新开始抓包")
+    #print("抓包已停止，可以重新开始抓包")
 
 #分片重组显示
 def ReassembleShow(PktDataHex, PktDataANSI ,Count):
@@ -1184,7 +1207,6 @@ def ShowString(pktlist, pktindex):
 def ChangeIface(): # 选定网卡
     local_alldevs = para.alldevs
     ifaceindex = ui.comboBox.currentIndex()
-    print("当前选择为: "+para.NtwkIf[ifaceindex-1])
     for i in range(ifaceindex - 1):
         local_alldevs = local_alldevs.contents.next
     para.fp = pcap_open_live(
@@ -1365,7 +1387,6 @@ def ListenDevice():
             pcap_dump(para.DUMPFILE, para.header, para.pkt_data)
             res = pcap_next_ex(para.fp, byref(para.header), byref(para.pkt_data))
         if (res == -1):
-            print("读包失败: %s\n" % pcap_geterr(para.fp))
             sys.exit(-1)
     pcap_dump_close(para.DUMPFILE)
     pcap_close(para.fp)
@@ -1377,21 +1398,38 @@ def displaygui(showlist, rank):
     item_num = 0
     # 根据协议分颜色
     if showlist[3] == 'TCP':
-        brush = QtGui.QBrush(QtGui.QColor(254, 217, 166))
+        brush = QtGui.QBrush(QtGui.QColor(254, 217, 166))#肉色
         brush.setStyle(QtCore.Qt.SolidPattern)
     elif showlist[3] == 'UDP':
-        brush = QtGui.QBrush(QtGui.QColor(179, 205, 227))
+        brush = QtGui.QBrush(QtGui.QColor(179, 205, 227))#暗蓝灰色
         brush.setStyle(QtCore.Qt.SolidPattern)
     elif showlist[3] in ['ARP','RARP']:
-        brush = QtGui.QBrush(QtGui.QColor(204, 235, 197))
+        brush = QtGui.QBrush(QtGui.QColor(204, 235, 197))#草绿色
         brush.setStyle(QtCore.Qt.SolidPattern)
     elif showlist[3] in ['IPv6','ICMPv6']:
-        brush = QtGui.QBrush(QtGui.QColor(222, 203, 228))
+        brush = QtGui.QBrush(QtGui.QColor(222, 203, 228))#李子紫
         brush.setStyle(QtCore.Qt.SolidPattern)
-    elif showlist[3] in ['ICMP', 'IGMP']:
-        brush = QtGui.QBrush(QtGui.QColor(255, 255, 155))
+    elif showlist[3] == 'ICMP':
+        brush = QtGui.QBrush(QtGui.QColor(255, 255, 155))#黄色
         brush.setStyle(QtCore.Qt.SolidPattern)
-    #HTTP，FTP，TELNET，TLS,OICQ
+    elif showlist[3] == 'IGMP':
+        brush = QtGui.QBrush(QtGui.QColor(240, 230, 140))#卡其布金
+        brush.setStyle(QtCore.Qt.SolidPattern)
+    elif showlist[3] == 'HTTP':
+        brush = QtGui.QBrush(QtGui.QColor(107, 194, 53))#绿
+        brush.setStyle(QtCore.Qt.SolidPattern)
+    elif showlist[3] == 'FTP':
+        brush = QtGui.QBrush(QtGui.QColor(255, 69, 0))#橙红
+        brush.setStyle(QtCore.Qt.SolidPattern)
+    elif showlist[3] == 'TLS':
+        brush = QtGui.QBrush(QtGui.QColor(92, 167, 186))#青
+        brush.setStyle(QtCore.Qt.SolidPattern)
+    elif showlist[3] == 'TELNET':
+        brush = QtGui.QBrush(QtGui.QColor(225, 255, 255))#淡青
+        brush.setStyle(QtCore.Qt.SolidPattern)
+    elif showlist[3] == 'OICQ':
+        brush = QtGui.QBrush(QtGui.QColor(139, 0, 139))#深洋红色
+        brush.setStyle(QtCore.Qt.SolidPattern)
     else:
         brush = QtGui.QBrush(QtGui.QColor(251, 180, 174))
         brush.setStyle(QtCore.Qt.SolidPattern)
@@ -1539,14 +1577,12 @@ def PacketFilter(filter):
     #filter = "tcp"
     ## compile the filter
     if pcap_compile(para.fp, byref(fcode), filter.encode("utf-8"), 1, netmask) < 0:
-        print('\nerror compiling filter: wrong syntax.\n')
         pcap_close(para.fp)
         sys.exit(-3)
 
     ## set the filter
 
     if pcap_setfilter(para.fp, byref(fcode)) < 0:
-        print('\nerror setting the filter\n')
         pcap_close(para.fp)
         sys.exit(-4)
 
