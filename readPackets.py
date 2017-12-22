@@ -406,33 +406,56 @@ def IPv6PacketLoop(pkt_data, len ,begin):
             ip_src = ip_src + ":"
     packet.append(ip_src)
 
-    #目的地址----------------------------------------10
+    # 目的地址----------------------------------------10
     ip_dst = ""
     for i in range(8):
         for j in range(2):
-            ip_dst = ip_dst + "%.2x" % (pkt_data[i*2 + j + begin + 24])
-        if (i!=7):
+            ip_dst = ip_dst + "%.2x" % (pkt_data[i * 2 + j + begin + 24])
+        if (i != 7):
             ip_dst = ip_dst + ":"
-    packet.append(ip_src)
+    packet.append(ip_dst)
     ip_dataStart = begin + 40
     # 协议名----------------------------------------11
-    if (ip_nxth == "3a" ):
-        #ICMP
+
+    if (ip_nxth == "3a"):
+        # ICMP
         packet.append("ICMPv6")
         return packet + ICMPv6PacketLoop(pkt_data, len, ip_dataStart)
-    elif (ip_nxth == "02" ):
-        #IGMP
+    elif (ip_nxth == "02"):
+        # IGMP
         packet.append("IGMP")
         return packet + IGMPPacketLoop(pkt_data, len, ip_dataStart)
-    elif (ip_nxth == "06" ):
-        #TCP
+    elif (ip_nxth == "06"):
+        # TCP
         packet.append("TCP")
         return packet + TCPPacketLoop(pkt_data, len, ip_dataStart)
-    elif (ip_nxth == "11" ):
-        #UDP
+    elif (ip_nxth == "11"):
+        # UDP
         packet.append("UDP")
         return packet + UDPPacketLoop(pkt_data, len, ip_dataStart)
-    else :#(ip_nxth == "00"):
+    elif (ip_nxth == "00"):
+
+        tmp = "%.2x" % pkt_data[ip_dataStart]
+        if tmp == "3a":
+            ip_dataStart += 8
+            packet.append("ICMPv6")
+            return packet + ICMPv6PacketLoop(pkt_data, len, ip_dataStart)
+        else:
+            packet.append("未识别的ipv6包上层协议/拓展报头")
+            uh_data = ""
+            uh_dataANSI = ""
+            for i in range(len):
+                uh_data = uh_data + "%.2x " % (pkt_data[i])
+                if (pkt_data[i] > 31 and pkt_data[i] < 127):
+                    uh_dataANSI = uh_dataANSI + chr(pkt_data[i])
+                else:
+                    uh_dataANSI = uh_dataANSI + '.'
+            packet.append(uh_data)
+            packet.append(uh_dataANSI)
+
+            return packet
+
+    else:  # (ip_nxth == "00"):
         packet.append("未识别的ipv6包上层协议/拓展报头")
         uh_data = ""
         uh_dataANSI = ""
@@ -750,20 +773,7 @@ def IGMPPacketLoop(pkt_data, len, begin):
             igmp_data_ANSI = igmp_data_ANSI + chr(pkt_data[i])
         else:
             igmp_data_ANSI = igmp_data_ANSI + '.'
-    '''
-    for i in range(len):
-        if (i % 16 == 0):
-            if( i != 0):
-                th_data = th_data + "\n"
-            th_data = th_data + "%.4x  " % (i)
-        th_data = th_data + "%.2x " % (pkt_data[i])
-        if (pkt_data[i]>31 and pkt_data[i]<127):
-            th_data_ANSI = th_data_ANSI + chr(pkt_data[i])
-        else :
-            th_data_ANSI = th_data_ANSI + '.'
-        if (i % 16 == 7):
-            th_data_ANSI = th_data_ANSI + ' '
-            th_data = th_data + "'''
+
     packet.append(igmp_data)
     packet.append(igmp_data_ANSI)
     return packet
@@ -895,10 +905,7 @@ def TCPPacketLoop(pkt_data, len, begin):
     packet.append(th_urp)
 
     #选项字段选择性忽略
-    '''th_data = ""
-    for i in range(len - begin - 4*th_off):
-        th_data = th_data + "%.2x" % (pkt_data[begin +4*th_off + i])
-    packet.append(th_data)'''
+
     th_data = ""
     th_data_ANSI = ""
     dataOrigin = ""

@@ -1251,12 +1251,16 @@ def list_to_display(lista,Num):  # 显示上面窗口的src，dst，prt，len等
                 listdisplay = [str(lista[i]) for i in [14, 15]]
                 if (lista[17] == 8000 or lista[17] == 4000 or lista[18] == 4000 or lista[18] == 8000):
                     listdisplay.append("OICQ")
+                    listdisplay.append(lista[-1])  # 长度
+                    listdisplay.append(lista[-2][:11])  # 日期
+                    listdisplay.append(lista[-2][11:24])  # 时间
+                    listdisplay.append("OICQ数据..(UDP)")
                 else :
                     listdisplay.append(lista[12])
-                listdisplay.append(lista[-1])  # 长度
-                listdisplay.append(lista[-2][:11])  # 日期
-                listdisplay.append(lista[-2][11:24])  # 时间
-                listdisplay.append(lista[14] +":"+str(lista[17])+"->"+lista[15]+":"+str(lista[18]))
+                    listdisplay.append(lista[-1])  # 长度
+                    listdisplay.append(lista[-2][:11])  # 日期
+                    listdisplay.append(lista[-2][11:24])  # 时间
+                    listdisplay.append(lista[14] +":"+str(lista[17])+"->"+lista[15]+":"+str(lista[18]))
             elif lista[12] == 'TCP':
                 listdisplay = [str(lista[i]) for i in [14, 15]]
                 if (lista[17] == 23 or lista[18] == 23):
@@ -1264,38 +1268,62 @@ def list_to_display(lista,Num):  # 显示上面窗口的src，dst，prt，len等
                     listdisplay.append(lista[-1])  # 长度
                     listdisplay.append(lista[-2][:11])  # 日期
                     listdisplay.append(lista[-2][11:24])  # 时间
-                    listdisplay.append(str(lista[17]) + "->" + str(lista[18]) + "   Seq=" + str(lista[19]) + "  Ack=" + str(lista[20]))
+                    listdisplay.append("Telnet数据..")
                 elif (lista[17] == 80 or lista[18] == 80):
                     listdisplay.append("HTTP")
                     listdisplay.append(lista[-1])  # 长度
                     listdisplay.append(lista[-2][:11])  # 日期
                     listdisplay.append(lista[-2][11:24])  # 时间
-                    listdisplay.append(str(lista[17]) + "->" + str(lista[18]) + "   Seq=" + str(lista[19]) + "  Ack=" + str(lista[20]))
+                    st = (lista[4]+lista[21]) * 4 + 14
+                    try:
+                        index = str.index(lista[-3][st:-1], "HTTP/1.1") + st
+                        end = str.index(lista[-3][index:-1] , "..") + index
+                        a = lista[-3][st:end]
+                        listdisplay.append(a)
+                    except:
+                        listdisplay.append("HTTP协议..")
                 elif (lista[17] == 21):
                     listdisplay.append("FTP")
                     listdisplay.append(lista[-1])  # 长度
                     listdisplay.append(lista[-2][:11])  # 日期
                     listdisplay.append(lista[-2][11:24])  # 时间
-                    listdisplay.append(str(lista[17]) + "->" + str(lista[18]) + "   Seq=" + str(lista[19]) + "  Ack=" + str(lista[20]))
+                    st = (lista[4] + lista[21]) * 4 + 14
+                    listdisplay.append(lista[-3][st:-1][:50])
                 elif (lista[17] == 443):
                     listdisplay.append("TLS")
                     listdisplay.append(lista[-1])  # 长度
                     listdisplay.append(lista[-2][:11])  # 日期
                     listdisplay.append(lista[-2][11:24])  # 时间
-                    listdisplay.append("应用数据")
+                    listdisplay.append("应用数据..")
                 elif (lista[17] == 8000 or lista[17] == 4000 or lista[17] == 4000 or lista[17] == 8000):
                     listdisplay.append("OICQ")
                     listdisplay.append(lista[-1])  # 长度
                     listdisplay.append(lista[-2][:11])  # 日期
                     listdisplay.append(lista[-2][11:24])  # 时间
-                    listdisplay.append("OICQ协议数据")
+                    listdisplay.append("OICQ数据..(TCP)")
                 else:
                     listdisplay.append("TCP")
                     listdisplay.append(lista[-1])  # 长度
                     listdisplay.append(lista[-2][:11])  # 日期
                     listdisplay.append(lista[-2][11:24])  # 时间
-                    listdisplay.append(str(lista[17]) + "->" + str(lista[18]) + "   Seq=" + str(lista[19]) + "  Ack=" + str(lista[20]))
-
+                    a = "["
+                    if lista[23]==1:
+                        a += "URG "
+                    if lista[24] == 1:
+                        a += "ACK "
+                    if lista[25] == 1:
+                        a += "PSH "
+                    if lista[26] == 1:
+                        a += "RST "
+                    if lista[27] == 1:
+                        a += "SYN "
+                    if lista[28] == 1:
+                        a += "FIN "
+                    if a!="[":
+                        a = a[0:-1] + "] "
+                    else:
+                        a = " "
+                    listdisplay.append(a + str(lista[17]) + "->" + str(lista[18]) + "   Seq=" + str(lista[19]) + "  Ack=" + str(lista[20]))
             elif lista[12]  =='IGMP':
                 listdisplay = [str(lista[i]) for i in [14, 15, 12]]
                 listdisplay.append(lista[-1])  # 长度
