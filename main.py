@@ -445,9 +445,6 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         pcap_dump_close(para.DUMPFILE)
         pcap_close(para.fp)
 
-        ui.textBrowser_HEX.setText(PktDataHex)
-        #添加网卡名0
-
     # 在列表中添加网卡名
     def AddIface(self):
         _translate = QtCore.QCoreApplication.translate
