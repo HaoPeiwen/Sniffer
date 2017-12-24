@@ -2,3 +2,9 @@
 temp
 __pycache__/readPackets.cpython-36.pyc
 *.pyc
+nxm
+*.xml
+*.iml
+*.json
+*.sqlite
+.vs/Sniffer/v15/.suo

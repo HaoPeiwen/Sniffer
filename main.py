@@ -30,7 +30,8 @@ class Parameter():
         self.showpacket = [] # 每次显示的一个包
         self.filterlist = [] # 过滤后显示的包
         self.SearchFlag = 0 # 如果点击搜索则为1，显示列表用filterlist，点击返回或不操作为0，显示列表用packet
-    
+        self.Process = None
+
     def reinitial(self):
         self.RANK = 0  # 当前包最大索引数
         self.selectRANK = 0  # 所选包索引
@@ -44,6 +45,7 @@ class Parameter():
         self.showpacket = []  # 每次显示的一个包
         self.filterlist = []
         self.SearchFlag = 0
+        
 
 #输出适配器列表
 para = Parameter() # 实例调用
@@ -157,6 +159,7 @@ class Ui_Dialog(QtWidgets.QDialog):
         ui.lineEdit_filter.setText(FilterString)
         PacketFilter(FilterString)
         self.close()
+    
 
     def handle_click(self):
         if not self.isVisible():
@@ -174,7 +177,7 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
     #创建GUI窗口
     def setupUi(self, SnifferGUI):
         SnifferGUI.setObjectName("SnifferGUI")
-        SnifferGUI.resize(1250, 860)
+        SnifferGUI.resize(1240, 850)
         self.centralwidget = QtWidgets.QWidget(SnifferGUI)
         self.centralwidget.setObjectName("centralwidget")
         self.comboBox = QtWidgets.QComboBox(self.centralwidget)
@@ -218,21 +221,21 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         self.commandLinkButton.setGeometry(QtCore.QRect(560, 50, 90, 41))
         self.commandLinkButton.setObjectName("commandLinkButton")
         self.treeWidget = QtWidgets.QTreeWidget(self.centralwidget)
-        self.treeWidget.setGeometry(QtCore.QRect(30, 100, 1181, 421))
+        self.treeWidget.setGeometry(QtCore.QRect(30, 100, 1181, 350))
         self.treeWidget.setObjectName("treeWidget")
         self.tabWidget_Details = QtWidgets.QTabWidget(self.centralwidget)
-        self.tabWidget_Details.setGeometry(QtCore.QRect(30, 540, 501, 261))
+        self.tabWidget_Details.setGeometry(QtCore.QRect(30, 470, 380, 330))
         self.tabWidget_Details.setObjectName("tabWidget_Details")
         self.tab_Ethernet = QtWidgets.QWidget()
         self.tab_Ethernet.setObjectName("tab_Ethernet")
         self.listWidget = QtWidgets.QListWidget(self.tab_Ethernet)
-        self.listWidget.setGeometry(QtCore.QRect(0, 0, 501, 241))
+        self.listWidget.setGeometry(QtCore.QRect(0, 0, 375, 330))
         self.listWidget.setObjectName("listWidget")
         self.tabWidget_Details.addTab(self.tab_Ethernet, "")
         self.tab_IP = QtWidgets.QWidget()
         self.tab_IP.setObjectName("tab_IP")
         self.listWidget_IP = QtWidgets.QListWidget(self.tab_IP)
-        self.listWidget_IP.setGeometry(QtCore.QRect(0, 0, 501, 241))
+        self.listWidget_IP.setGeometry(QtCore.QRect(0, 0, 375, 330))
         self.listWidget_IP.setObjectName("listWidget_IP")
         item = QtWidgets.QListWidgetItem()
         font = QtGui.QFont()
@@ -243,19 +246,19 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         self.tab_Protocol = QtWidgets.QWidget()
         self.tab_Protocol.setObjectName("tab_Protocol")
         self.listWidget_Protocol = QtWidgets.QListWidget(self.tab_Protocol)
-        self.listWidget_Protocol.setGeometry(QtCore.QRect(0, 0, 501, 241))
+        self.listWidget_Protocol.setGeometry(QtCore.QRect(0, 0, 375, 330))
         self.listWidget_Protocol.setObjectName("listWidget_Protocol")
         item = QtWidgets.QListWidgetItem()
         item.setFont(font)
         self.listWidget_Protocol.addItem(item)
         self.tabWidget_Details.addTab(self.tab_Protocol, "")
         self.tabWidget_Reassemble = QtWidgets.QTabWidget(self.centralwidget)
-        self.tabWidget_Reassemble.setGeometry(QtCore.QRect(560, 540, 651, 261))
+        self.tabWidget_Reassemble.setGeometry(QtCore.QRect(440, 470, 773, 330))
         self.tabWidget_Reassemble.setObjectName("tabWidget_Reassemble")
         self.tab_String = QtWidgets.QWidget()
         self.tab_String.setObjectName("tab_String")
         self.textBrowser_String = QtWidgets.QTextBrowser(self.tab_String)
-        self.textBrowser_String.setGeometry(QtCore.QRect(0, 0, 651, 241))
+        self.textBrowser_String.setGeometry(QtCore.QRect(0, 0, 767, 330))
         font = QtGui.QFont()
         font.setFamily("Consolas")
         font.setBold(False)
@@ -267,14 +270,14 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         self.tab_HEX = QtWidgets.QWidget()
         self.tab_HEX.setObjectName("tab_HEX")
         self.textBrowser_HEX = QtWidgets.QTextBrowser(self.tab_HEX)
-        self.textBrowser_HEX.setGeometry(QtCore.QRect(0, 0, 651, 241))
+        self.textBrowser_HEX.setGeometry(QtCore.QRect(0, 0, 767, 330))
         self.textBrowser_HEX.setFont(font)
         self.textBrowser_HEX.setObjectName("textBrowser_HEX")
         self.tabWidget_Reassemble.addTab(self.tab_HEX, "")
         self.tab_GBK = QtWidgets.QWidget()
         self.tab_GBK.setObjectName("tab_GBK")
         self.textBrowser_GBK = QtWidgets.QTextBrowser(self.tab_GBK)
-        self.textBrowser_GBK.setGeometry(QtCore.QRect(0, 0, 651, 241))
+        self.textBrowser_GBK.setGeometry(QtCore.QRect(0, 0, 767, 330))
         self.textBrowser_GBK.setFont(font)
         self.textBrowser_GBK.setObjectName("textBrowser_GBK")
         self.textBrowser_GBK.setWordWrapMode(QtGui.QTextOption.NoWrap)
@@ -282,7 +285,7 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         self.tab_ANSI = QtWidgets.QWidget()
         self.tab_ANSI.setObjectName("tab_ANSI")
         self.textBrowser_ANSI = QtWidgets.QTextBrowser(self.tab_ANSI)
-        self.textBrowser_ANSI.setGeometry(QtCore.QRect(0, 0, 651, 241))
+        self.textBrowser_ANSI.setGeometry(QtCore.QRect(0, 0, 767, 330))
         self.textBrowser_ANSI.setFont(font)
         self.textBrowser_ANSI.setObjectName("textBrowser_ANSI")
         self.textBrowser_ANSI.setWordWrapMode(QtGui.QTextOption.NoWrap)
@@ -290,14 +293,14 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         self.tab_UTF8 = QtWidgets.QWidget()
         self.tab_UTF8.setObjectName("tab_UTF8")
         self.textBrowser_UTF8 = QtWidgets.QTextBrowser(self.tab_UTF8)
-        self.textBrowser_UTF8.setGeometry(QtCore.QRect(0, 0, 651, 241))
+        self.textBrowser_UTF8.setGeometry(QtCore.QRect(0, 0, 767, 330))
         self.textBrowser_UTF8.setFont(font)
         self.textBrowser_UTF8.setObjectName("textBrowser_UTF8")
         self.tabWidget_Reassemble.addTab(self.tab_UTF8, "")
         self.tab_PRT = QtWidgets.QWidget()
         self.tab_PRT.setObjectName("tab_PRT")
         self.textBrowser_PRT = QtWidgets.QTextBrowser(self.tab_PRT)
-        self.textBrowser_PRT.setGeometry(QtCore.QRect(0, 0, 651, 241))
+        self.textBrowser_PRT.setGeometry(QtCore.QRect(0, 0, 767, 330))
         self.textBrowser_PRT.setFont(font)
         self.textBrowser_PRT.setObjectName("textBrowser_PRT")
         self.textBrowser_PRT.setWordWrapMode(QtGui.QTextOption.NoWrap)
@@ -342,8 +345,8 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         self.treeWidget.itemClicked.connect(self.ShowDetails)
         self.pushButton_save.clicked.connect(self.SavePacket2File)
         self.pushButton_return.clicked.connect(backsearch)
-        self.pushButton_reassemble.clicked.connect(self.resembleFragments)
-        self.pushButton_TCPstream.clicked.connect(self.TCPDataFlow)
+        self.pushButton_reassemble.clicked.connect(resembleFragments)
+        self.pushButton_TCPstream.clicked.connect(TCPDataFlow)
         #self.commandLinkButton.clicked.connect(SecondWindow)
         QtCore.QMetaObject.connectSlotsByName(SnifferGUI)
 
@@ -442,91 +445,7 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         pcap_dump_close(para.DUMPFILE)
         pcap_close(para.fp)
 
-    #Ip分片重组
-    def resembleFragments(self):
-        # 首先分析哪些相关包能够重组
-        ## Open the capture file
-        pkt_index = int(self.treeWidget.selectedItems()[0].text(0))  -1 # 得到索引值
-        
-        if para.SearchFlag == 0:
-            id = para.packet[pkt_index][7] # 标识
-        else:
-            id = para.filterlist[pkt_index][7]
-        PktDataHex = ""
-        PktLst = []
-        PktDataANSI = ""
-        count = 0
-        for packets in para.packet:
-            if (len(packets)<8):
-                pass
-            elif ((packets[2] == "IPv4" )and (packets[7] == id )):
-                count += 1
-                PktLst.append((packets[-3],packets[-4],packets[10],packets[4]))
-        PktLst = sorted(PktLst, key=lambda x: int(x[2]))
-        ##加工一下
-        for fragments in PktLst:
-            #考虑一下选项吧那就！
-            start = fragments[-1] * 4 + 14
-            PktDataANSI = PktDataANSI + fragments[0][start:]
-            PktDataHex = PktDataHex + fragments[1][4 * start:]
-            #PktDataGBK = PktDataANSI.encode("gbk")
-        ReassembleShow(PktDataHex, PktDataANSI, count)
-
-    #追踪TCP数据流
-    def TCPDataFlow(self):
-        # 首先分析哪些相关包能够重组
-        ## Open the capture file
-        pkt_index = int(self.treeWidget.selectedItems()[0].text(0)) - 1  # 得到索引值
-        #如果不是TCP协议的包就直接退
-        if (len(para.packet[pkt_index])<20 or para.packet[pkt_index][12] != "TCP"):
-            return
-
-        if para.SearchFlag == 0:
-            src_ip = para.packet[pkt_index][14]  # 源IP
-            dst_ip = para.packet[pkt_index][15]  # 目的IP
-            src_port = para.packet[pkt_index][17]  # 源端口
-            dst_port = para.packet[pkt_index][18]  # 目的端口
-        else:
-            src_ip = para.filterlist[pkt_index][14] # 源IP
-            dst_ip = para.filterlist[pkt_index][15]  # 目的IP
-            src_port = para.filterlist[pkt_index][17]  # 源端口
-            dst_port = para.filterlist[pkt_index][18]  # 目的端口
-        PktDataHex = ""
-        PktLst = []
-        PktDataANSI = ""
-        PktDataOrigin = ""
-        count = 0
-        for packets in para.packet:
-            if (len(packets) < 20 or packets[12] != "TCP"):
-                pass
-            elif ((packets[14] == src_ip) and (packets[15] == dst_ip) and (packets[17] == src_port) and (packets[18] == dst_port) ):
-                count += 1
-                PktLst.append((packets[-3], packets[-4], packets[-5], packets[19], packets[4] + packets[21] ))
-                #包数据[ANSI,Hex,源码(GBK),seq,偏移量]
-        PktLst = sorted(PktLst, key=lambda x: int(x[3]))
-        ##加工一下
-        fp = open("nxm", "wb")
-        for fragments in PktLst:
-            start = fragments[-1]*4 + 14
-            PktDataANSI = PktDataANSI + fragments[0][start:]
-            PktDataHex = PktDataHex + fragments[1][4 * start:]
-            PktDataOrigin = PktDataOrigin + fragments[2][start:]
-            fp.write(bytes(fragments[2][start:], "latin-1"))
-
-        PktDataGBK = PktDataOrigin.encode("latin-1").decode("gbk",'ignore')
-
-        conv = Ansi2HTMLConverter()
-        PktDataHtml = conv.convert(PktDataGBK)
-        PktDataHtml = str.replace(PktDataHtml,"\n</span>", "</span>")
-
-
         ui.textBrowser_HEX.setText(PktDataHex)
-        ui.textBrowser_UTF8.setText(PktDataANSI)
-        ui.textBrowser_GBK.setText(PktDataGBK)
-        ui.textBrowser_ANSI.setText(PktDataOrigin)
-        ui.textBrowser_PRT.setHtml(PktDataHtml)
-        fp.close()
-
         #添加网卡名0
 
     # 在列表中添加网卡名
@@ -1103,6 +1022,99 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
                 pass
 #第二窗口注释
 
+
+#Ip分片重组
+def resembleFragments():
+    # 首先分析哪些相关包能够重组
+    ## Open the capture file
+    pkt_index = int(ui.treeWidget.selectedItems()
+                    [0].text(0)) - 1  # 得到索引值
+
+    if para.SearchFlag == 0:
+        id = para.packet[pkt_index][7]  # 标识
+    else:
+        id = para.filterlist[pkt_index][7]
+    PktDataHex = ""
+    PktLst = []
+    PktDataANSI = ""
+    count = 0
+    for packets in para.packet:
+        if (len(packets) < 8):
+            pass
+        elif ((packets[2] == "IPv4")and (packets[7] == id)):
+            count += 1
+            PktLst.append((packets[-3], packets[-4],
+                            packets[10], packets[4]))
+    PktLst = sorted(PktLst, key=lambda x: int(x[2]))
+    ##加工一下
+    for fragments in PktLst:
+        #考虑一下选项吧那就！
+        start = fragments[-1] * 4 + 14  # 首部长度是5，*4得到20个字节的IP头
+
+        PktDataANSI = PktDataANSI + fragments[0][start:]
+        PktDataHex = PktDataHex + fragments[1][3 * start:]
+        #PktDataGBK = PktDataANSI.encode("gbk")
+    ReassembleShow(PktDataHex, PktDataANSI, count)
+
+#追踪TCP数据流
+def TCPDataFlow():
+    # 首先分析哪些相关包能够重组
+    ## Open the capture file
+    pkt_index = int(ui.treeWidget.selectedItems()
+                    [0].text(0)) - 1  # 得到索引值
+    #如果不是TCP协议的包就直接退
+    if (len(para.packet[pkt_index]) < 20 or para.packet[pkt_index][12] != "TCP"):
+        return
+
+    if para.SearchFlag == 0:
+        src_ip = para.packet[pkt_index][14]  # 源IP
+        dst_ip = para.packet[pkt_index][15]  # 目的IP
+        src_port = para.packet[pkt_index][17]  # 源端口
+        dst_port = para.packet[pkt_index][18]  # 目的端口
+    else:
+        src_ip = para.filterlist[pkt_index][14]  # 源IP
+        dst_ip = para.filterlist[pkt_index][15]  # 目的IP
+        src_port = para.filterlist[pkt_index][17]  # 源端口
+        dst_port = para.filterlist[pkt_index][18]  # 目的端口
+    PktDataHex = ""
+    PktLst = []
+    PktDataANSI = ""
+    PktDataOrigin = ""
+    count = 0
+    for packets in para.packet:
+        if (len(packets) < 20 or packets[12] != "TCP"):
+            pass
+        elif ((packets[14] == src_ip) and (packets[15] == dst_ip) and (packets[17] == src_port) and (packets[18] == dst_port)):
+            count += 1
+            PktLst.append(
+                (packets[-3], packets[-4], packets[-5], packets[19], packets[4] + packets[21]))
+            #包数据[ANSI,Hex,源码(GBK),seq,偏移量]
+    PktLst = sorted(PktLst, key=lambda x: int(x[3]))
+    ##加工一下
+    fp = open("nxm", "wb")
+    for fragments in PktLst:
+        start = fragments[-1] * 4 + 14
+        PktDataANSI = PktDataANSI + fragments[0][start:]
+        PktDataHex = PktDataHex + fragments[1][4 * start:]
+        PktDataOrigin = PktDataOrigin + fragments[2][start:]
+        fp.write(bytes(fragments[2][start:], "latin-1"))
+
+    PktDataGBK = PktDataOrigin.encode("latin-1").decode("gbk", 'ignore')
+
+    conv = Ansi2HTMLConverter()
+    PktDataHtml = conv.convert(PktDataGBK)
+    PktDataHtml = str.replace(PktDataHtml, "\n</span>", "</span>")
+
+    ui.textBrowser_HEX.setText(PktDataHex)
+    ui.textBrowser_UTF8.setText(PktDataANSI)
+    ui.textBrowser_GBK.setText(PktDataGBK)
+    ui.textBrowser_ANSI.setText(PktDataOrigin)
+    ui.textBrowser_PRT.setHtml(PktDataHtml)
+    fp.close()
+
+
+
+
 #返回搜索
 def backsearch():
     para.SearchFlag = 0
@@ -1118,7 +1130,7 @@ def SniffStop():
     para.ListenFlag = 0
     para.Process.join()
 
-    #print("抓包已停止，可以重新开始抓包")
+    print("抓包已停止，可以重新开始抓包")
 
 #分片重组显示
 def ReassembleShow(PktDataHex, PktDataANSI ,Count):
@@ -1380,7 +1392,7 @@ def list_to_display(lista,Num):  # 显示上面窗口的src，dst，prt，len等
 #抓包线程
 def threadlisten(): #开启一个线程抓包
     #global Process
-    #Process = threading.Thread(target=ListenDevice)
+    para.Process = threading.Thread(target=ListenDevice)
     if para.ListenFlag == 1:
         para.Process.start()
     else:
@@ -1389,6 +1401,7 @@ def threadlisten(): #开启一个线程抓包
         ui.treeWidget.clear()
         para.ListenFlag = 1
         para.Process.start()
+
 
 #抓包函数
 def ListenDevice():
@@ -1426,37 +1439,37 @@ def displaygui(showlist, rank):
     item_num = 0
     # 根据协议分颜色
     if showlist[3] == 'TCP':
-        brush = QtGui.QBrush(QtGui.QColor(254, 217, 166))#肉色
+        brush = QtGui.QBrush(QtGui.QColor(141, 211, 199))
         brush.setStyle(QtCore.Qt.SolidPattern)
     elif showlist[3] == 'UDP':
-        brush = QtGui.QBrush(QtGui.QColor(179, 205, 227))#暗蓝灰色
+        brush = QtGui.QBrush(QtGui.QColor(255, 255, 179))  
         brush.setStyle(QtCore.Qt.SolidPattern)
     elif showlist[3] in ['ARP','RARP']:
-        brush = QtGui.QBrush(QtGui.QColor(204, 235, 197))#草绿色
+        brush = QtGui.QBrush(QtGui.QColor(190,186,218))
         brush.setStyle(QtCore.Qt.SolidPattern)
     elif showlist[3] in ['IPv6','ICMPv6']:
-        brush = QtGui.QBrush(QtGui.QColor(222, 203, 228))#李子紫
+        brush = QtGui.QBrush(QtGui.QColor(251, 128, 114))  
         brush.setStyle(QtCore.Qt.SolidPattern)
     elif showlist[3] == 'ICMP':
-        brush = QtGui.QBrush(QtGui.QColor(255, 255, 155))#黄色
+        brush = QtGui.QBrush(QtGui.QColor(128, 177, 211))  
         brush.setStyle(QtCore.Qt.SolidPattern)
     elif showlist[3] == 'IGMP':
-        brush = QtGui.QBrush(QtGui.QColor(240, 230, 140))#卡其布金
+        brush = QtGui.QBrush(QtGui.QColor(253, 180, 98))  
         brush.setStyle(QtCore.Qt.SolidPattern)
     elif showlist[3] == 'HTTP':
-        brush = QtGui.QBrush(QtGui.QColor(107, 194, 53))#绿
+        brush = QtGui.QBrush(QtGui.QColor(179, 222, 105))  
         brush.setStyle(QtCore.Qt.SolidPattern)
     elif showlist[3] == 'FTP':
-        brush = QtGui.QBrush(QtGui.QColor(255, 69, 0))#橙红
+        brush = QtGui.QBrush(QtGui.QColor(252, 205, 229))  
         brush.setStyle(QtCore.Qt.SolidPattern)
     elif showlist[3] == 'TLS':
-        brush = QtGui.QBrush(QtGui.QColor(92, 167, 186))#青
+        brush = QtGui.QBrush(QtGui.QColor(255,237,111))  
         brush.setStyle(QtCore.Qt.SolidPattern)
     elif showlist[3] == 'TELNET':
-        brush = QtGui.QBrush(QtGui.QColor(225, 255, 255))#淡青
+        brush = QtGui.QBrush(QtGui.QColor(188, 128, 189))  
         brush.setStyle(QtCore.Qt.SolidPattern)
     elif showlist[3] == 'OICQ':
-        brush = QtGui.QBrush(QtGui.QColor(139, 0, 139))#深洋红色
+        brush = QtGui.QBrush(QtGui.QColor(204,235,197))
         brush.setStyle(QtCore.Qt.SolidPattern)
     else:
         brush = QtGui.QBrush(QtGui.QColor(251, 180, 174))
