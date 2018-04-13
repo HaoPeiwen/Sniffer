@@ -5,7 +5,8 @@ from winpcapy import *
 from readPackets import *
 from ansi2html import *
 from converter import *
-
+from PyQt5.QtWidgets import *
+from PyQt5.QtCore import *
 from PyQt5.QtWidgets import QMessageBox
 #pyuic5 -o s.py sniffergui.ui
 
@@ -157,7 +158,7 @@ class Ui_Dialog(QtWidgets.QDialog):
             else:
                 FilterString = "ip or ip6"
         ui.lineEdit_filter.setText(FilterString)
-        PacketFilter(FilterString)
+        ui.PacketFilter(FilterString)
         self.close()
     
 
@@ -173,8 +174,13 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
+        ##创建一个线程实例并设置名称、变量、信号槽
+        self.thread = Catching()
+        self.thread.sinOut.connect(self.func)
+        #self.connect(self.thread, SIGNAL("convertPacket")
+        #             , self.func)
 
-    #创建GUI窗口
+        #创建GUI窗口
     def setupUi(self, SnifferGUI):
         SnifferGUI.setObjectName("SnifferGUI")
         SnifferGUI.resize(1240, 850)
@@ -338,15 +344,15 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         self.retranslateUi(SnifferGUI)
         self.tabWidget_Details.setCurrentIndex(0)
         self.tabWidget_Reassemble.setCurrentIndex(0)
-        self.pushButton_sniff.clicked.connect(threadlisten)
-        self.pushButton_stop.clicked.connect(SniffStop)
-        self.pushButton_filter.clicked.connect(Filter)
+        self.pushButton_sniff.clicked.connect(self.threadlisten)
+        self.pushButton_stop.clicked.connect(self.SniffStop)
+        self.pushButton_filter.clicked.connect(self.Filter)
         self.comboBox.currentIndexChanged.connect(ChangeIface)
         self.treeWidget.itemClicked.connect(self.ShowDetails)
         self.pushButton_save.clicked.connect(self.SavePacket2File)
-        self.pushButton_return.clicked.connect(backsearch)
-        self.pushButton_reassemble.clicked.connect(resembleFragments)
-        self.pushButton_TCPstream.clicked.connect(TCPDataFlow)
+        self.pushButton_return.clicked.connect(self.backsearch)
+        self.pushButton_reassemble.clicked.connect(self.resembleFragments)
+        self.pushButton_TCPstream.clicked.connect(self.TCPDataFlow)
         #self.commandLinkButton.clicked.connect(SecondWindow)
         QtCore.QMetaObject.connectSlotsByName(SnifferGUI)
 
@@ -445,7 +451,29 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         pcap_dump_close(para.DUMPFILE)
         pcap_close(para.fp)
 
+    def threadlisten(self):
+        if para.ListenFlag == 1:
+            self.thread.start()
+        else:
+            para.reinitial()
+            ChangeIface()
+            self.treeWidget.clear()
+            para.ListenFlag = 1
+            self.thread.start()
+    def func(self ,packet):
+        para.showpacket = etherPacketLoop(packet[0], len(packet[0]))
+        para.showpacket.append(packet[1])  # 加一个时间，年月日秒
+        para.showpacket.append(packet[2])  # 加一个总帧长
+        para.packet.append(para.showpacket)
+        self.displaygui(self.list_to_display(para.showpacket, para.RANK + 1), para.RANK)
+        para.RANK += 1
     # 在列表中添加网卡名
+    # 停止抓包
+    def SniffStop(self):
+        para.ListenFlag = 0
+        para.RANK = 0
+        self.thread.stop()
+
     def AddIface(self):
         _translate = QtCore.QCoreApplication.translate
         count = 1
@@ -466,7 +494,7 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
         _translate = QtCore.QCoreApplication.translate
         pktindex = int(self.treeWidget.selectedItems()[0].text(0)) -1 # 得到索引值
 
-        ShowString(pktlis, pktindex)  # 显示string
+        self.ShowString(pktlis, pktindex)  # 显示string
         # 分片页显示
         self.textBrowser_HEX.setText("NULL")
         # Ethernet 详细信息显示：
@@ -1017,131 +1045,231 @@ class Ui_SnifferGUI(QtWidgets.QMainWindow):
 
             else:
                 pass
-#第二窗口注释
 
+    def displaygui(self,showlist, rank):
+        #gui_object = ui
+        Treeitem = QtWidgets.QTreeWidgetItem(self.treeWidget)
+        item_num = 0
+        # 根据协议分颜色
+        if showlist[3] == 'TCP':
+            brush = QtGui.QBrush(QtGui.QColor(141, 211, 199))
+            brush.setStyle(QtCore.Qt.SolidPattern)
+        elif showlist[3] == 'UDP':
+            brush = QtGui.QBrush(QtGui.QColor(255, 255, 179))
+            brush.setStyle(QtCore.Qt.SolidPattern)
+        elif showlist[3] in ['ARP', 'RARP']:
+            brush = QtGui.QBrush(QtGui.QColor(190, 186, 218))
+            brush.setStyle(QtCore.Qt.SolidPattern)
+        elif showlist[3] in ['IPv6', 'ICMPv6']:
+            brush = QtGui.QBrush(QtGui.QColor(251, 128, 114))
+            brush.setStyle(QtCore.Qt.SolidPattern)
+        elif showlist[3] == 'ICMP':
+            brush = QtGui.QBrush(QtGui.QColor(128, 177, 211))
+            brush.setStyle(QtCore.Qt.SolidPattern)
+        elif showlist[3] == 'IGMP':
+            brush = QtGui.QBrush(QtGui.QColor(253, 180, 98))
+            brush.setStyle(QtCore.Qt.SolidPattern)
+        elif showlist[3] == 'HTTP':
+            brush = QtGui.QBrush(QtGui.QColor(179, 222, 105))
+            brush.setStyle(QtCore.Qt.SolidPattern)
+        elif showlist[3] == 'FTP':
+            brush = QtGui.QBrush(QtGui.QColor(252, 205, 229))
+            brush.setStyle(QtCore.Qt.SolidPattern)
+        elif showlist[3] == 'TLS':
+            brush = QtGui.QBrush(QtGui.QColor(255, 237, 111))
+            brush.setStyle(QtCore.Qt.SolidPattern)
+        elif showlist[3] == 'TELNET':
+            brush = QtGui.QBrush(QtGui.QColor(188, 128, 189))
+            brush.setStyle(QtCore.Qt.SolidPattern)
+        elif showlist[3] == 'OICQ':
+            brush = QtGui.QBrush(QtGui.QColor(204, 235, 197))
+            brush.setStyle(QtCore.Qt.SolidPattern)
+        else:
+            brush = QtGui.QBrush(QtGui.QColor(251, 180, 174))
+            brush.setStyle(QtCore.Qt.SolidPattern)
 
-#Ip分片重组
-def resembleFragments():
-    # 首先分析哪些相关包能够重组
-    ## Open the capture file
-    pkt_index = int(ui.treeWidget.selectedItems()
-                    [0].text(0)) - 1  # 得到索引值
+        for item in showlist:
+            self.treeWidget.topLevelItem(rank).setText(
+                item_num, QtCore.QCoreApplication.translate("SnifferGUI", item))
 
-    if para.SearchFlag == 0:
-        id = para.packet[pkt_index][7]  # 标识
-    else:
-        id = para.filterlist[pkt_index][7]
-    PktDataHex = ""
-    PktLst = []
-    PktDataANSI = ""
-    count = 0
-    for packets in para.packet:
-        if (len(packets) < 8):
-            pass
-        elif ((packets[2] == "IPv4")and (packets[7] == id)):
-            count += 1
-            PktLst.append((packets[-3], packets[-4],
-                            packets[10], packets[4]))
-    PktLst = sorted(PktLst, key=lambda x: int(x[2]))
-    ##加工一下
-    for fragments in PktLst:
-        #考虑一下选项吧那就！
-        start = fragments[-1] * 4 + 14  # 首部长度是5，*4得到20个字节的IP头
+            self.treeWidget.topLevelItem(rank).setBackground(item_num, brush)
 
-        PktDataANSI = PktDataANSI + fragments[0][start:]
-        PktDataHex = PktDataHex + fragments[1][3 * start:]
-        #PktDataGBK = PktDataANSI.encode("gbk")
-    ReassembleShow(PktDataHex, PktDataANSI, count)
+            item_num += 1
 
-#追踪TCP数据流
-def TCPDataFlow():
-    # 首先分析哪些相关包能够重组
-    ## Open the capture file
-    pkt_index = int(ui.treeWidget.selectedItems()
-                    [0].text(0)) - 1  # 得到索引值
-    #如果不是TCP协议的包就直接退
-    if (len(para.packet[pkt_index]) < 20 or para.packet[pkt_index][12] != "TCP"):
-        return
+    # 显示上方窗口内容
+    def list_to_display(self, lista, Num):  # 显示上面窗口的src，dst，prt，len等
+        listdisplay = []
+        if lista[2] in ['ARP', 'RARP']:
+            listdisplay = [str(lista[i]) for i in [9, 11, 2]]
+            listdisplay.append(lista[-1])  # 长度
+            listdisplay.append(lista[-2][:11])  # 日期
+            listdisplay.append(lista[-2][11:24])  # 时间
+            if lista[7] == "RARP请求":
+                listdisplay.append("我是" + lista[8] + "，请分配给我一个IP地址！")
+            elif lista[7] == "RARP应答":
+                listdisplay.append("亲爱的" + lista[10] + "你好！你的IP地址是" + lista[11])
+            elif lista[7] == "ARP请求":
+                listdisplay.append("谁是" + lista[11] + "？请站出来告诉" + lista[9])
+            elif lista[7] == "ARP回显":
+                listdisplay.append("我是" + lista[9] + "，我的MAC是" + lista[8])
 
-    if para.SearchFlag == 0:
-        src_ip = para.packet[pkt_index][14]  # 源IP
-        dst_ip = para.packet[pkt_index][15]  # 目的IP
-        src_port = para.packet[pkt_index][17]  # 源端口
-        dst_port = para.packet[pkt_index][18]  # 目的端口
-    else:
-        src_ip = para.filterlist[pkt_index][14]  # 源IP
-        dst_ip = para.filterlist[pkt_index][15]  # 目的IP
-        src_port = para.filterlist[pkt_index][17]  # 源端口
-        dst_port = para.filterlist[pkt_index][18]  # 目的端口
-    PktDataHex = ""
-    PktLst = []
-    PktDataANSI = ""
-    PktDataOrigin = ""
-    count = 0
-    for packets in para.packet:
-        if (len(packets) < 20 or packets[12] != "TCP"):
-            pass
-        elif ((packets[14] == src_ip) and (packets[15] == dst_ip) and (packets[17] == src_port) and (packets[18] == dst_port)):
-            count += 1
-            PktLst.append(
-                (packets[-3], packets[-4], packets[-5], packets[19], packets[4] + packets[21]))
-            #包数据[ANSI,Hex,源码(GBK),seq,偏移量]
-    PktLst = sorted(PktLst, key=lambda x: int(x[3]))
-    ##加工一下
-    fp = open("nxm", "wb")
-    for fragments in PktLst:
-        start = fragments[-1] * 4 + 14
-        PktDataANSI = PktDataANSI + fragments[0][start:]
-        PktDataHex = PktDataHex + fragments[1][4 * start:]
-        PktDataOrigin = PktDataOrigin + fragments[2][start:]
-        fp.write(bytes(fragments[2][start:], "latin-1"))
+        elif lista[2] == 'IPv6':
+            if lista[11] == 'ICMPv6':
+                listdisplay = [str(lista[i]) for i in [9, 10, 11]]
+                listdisplay.append(lista[-1])  # 长度
+                listdisplay.append(lista[-2][:11])  # 日期
+                listdisplay.append(lista[-2][11:24])  # 时间
+                listdisplay.append("ICMPv6" + lista[12])
+            else:
+                listdisplay = [str(lista[i]) for i in [9, 10, 2]]
+                listdisplay.append(lista[-1])  # 长度
+                listdisplay.append(lista[-2][:11])  # 日期
+                listdisplay.append(lista[-2][11:24])  # 时间
+                listdisplay.append(lista[9] + "->" + lista[10])
+        # 以下为ipv4族
+        else:
+            if len(lista) > 12:
+                if lista[12] == 'UDP':
+                    listdisplay = [str(lista[i]) for i in [14, 15]]
+                    if (lista[17] == 8000 or lista[17] == 4000 or lista[18] == 4000 or lista[18] == 8000):
+                        listdisplay.append("OICQ")
+                        listdisplay.append(lista[-1])  # 长度
+                        listdisplay.append(lista[-2][:11])  # 日期
+                        listdisplay.append(lista[-2][11:24])  # 时间
+                        listdisplay.append("OICQ数据..(UDP)")
+                    else:
+                        listdisplay.append(lista[12])
+                        listdisplay.append(lista[-1])  # 长度
+                        listdisplay.append(lista[-2][:11])  # 日期
+                        listdisplay.append(lista[-2][11:24])  # 时间
+                        listdisplay.append(
+                            lista[14] + ":" + str(lista[17]) + "->" + lista[15] + ":" + str(lista[18]))
+                elif lista[12] == 'TCP':
+                    listdisplay = [str(lista[i]) for i in [14, 15]]
+                    if (lista[17] == 23 or lista[18] == 23):
+                        listdisplay.append("TELNET")
+                        listdisplay.append(lista[-1])  # 长度
+                        listdisplay.append(lista[-2][:11])  # 日期
+                        listdisplay.append(lista[-2][11:24])  # 时间
+                        listdisplay.append("Telnet数据..")
+                    elif (lista[17] == 80 or lista[18] == 80):
+                        listdisplay.append("HTTP")
+                        listdisplay.append(lista[-1])  # 长度
+                        listdisplay.append(lista[-2][:11])  # 日期
+                        listdisplay.append(lista[-2][11:24])  # 时间
+                        st = (lista[4] + lista[21]) * 4 + 14
+                        try:
+                            index = str.index(lista[-3][st:-1], "HTTP/1.1") + st
+                            end = str.index(lista[-3][index:-1], "..") + index
+                            a = lista[-3][st:end]
+                            listdisplay.append(a)
+                        except:
+                            listdisplay.append("HTTP协议..")
+                    elif (lista[17] == 21):
+                        listdisplay.append("FTP")
+                        listdisplay.append(lista[-1])  # 长度
+                        listdisplay.append(lista[-2][:11])  # 日期
+                        listdisplay.append(lista[-2][11:24])  # 时间
+                        st = (lista[4] + lista[21]) * 4 + 14
+                        listdisplay.append(lista[-3][st:-1][:50])
+                    elif (lista[17] == 443):
+                        listdisplay.append("TLS")
+                        listdisplay.append(lista[-1])  # 长度
+                        listdisplay.append(lista[-2][:11])  # 日期
+                        listdisplay.append(lista[-2][11:24])  # 时间
+                        listdisplay.append("应用数据..")
+                    elif (lista[17] == 8000 or lista[17] == 4000 or lista[17] == 4000 or lista[17] == 8000):
+                        listdisplay.append("OICQ")
+                        listdisplay.append(lista[-1])  # 长度
+                        listdisplay.append(lista[-2][:11])  # 日期
+                        listdisplay.append(lista[-2][11:24])  # 时间
+                        listdisplay.append("OICQ数据..(TCP)")
+                    else:
+                        listdisplay.append("TCP")
+                        listdisplay.append(lista[-1])  # 长度
+                        listdisplay.append(lista[-2][:11])  # 日期
+                        listdisplay.append(lista[-2][11:24])  # 时间
+                        a = "["
+                        if lista[23] == 1:
+                            a += "URG "
+                        if lista[24] == 1:
+                            a += "ACK "
+                        if lista[25] == 1:
+                            a += "PSH "
+                        if lista[26] == 1:
+                            a += "RST "
+                        if lista[27] == 1:
+                            a += "SYN "
+                        if lista[28] == 1:
+                            a += "FIN "
+                        if a != "[":
+                            a = a[0:-1] + "] "
+                        else:
+                            a = " "
+                        listdisplay.append(a + str(lista[17]) + "->" + str(lista[18]) + "   Seq=" + str(
+                            lista[19]) + "  Ack=" + str(lista[20]))
+                elif lista[12] == 'IGMP':
+                    listdisplay = [str(lista[i]) for i in [14, 15, 12]]
+                    listdisplay.append(lista[-1])  # 长度
+                    listdisplay.append(lista[-2][:11])  # 日期
+                    listdisplay.append(lista[-2][11:24])  # 时间
+                    if (lista[17] == '16'):
+                        listdisplay.append(lista[14] + "申请加入多播组" + lista[20] + "（组成员报告，IGMPv2）")
+                    elif (lista[17] == '12'):
+                        listdisplay.append(lista[14] + "申请加入多播组" + lista[20] + "（组成员报告，IGMPv1）")
+                    elif (lista[17] == '17'):
+                        listdisplay.append(lista[14] + "离开多播组" + lista[20])
+                    elif (lista[17] == '11'):
+                        listdisplay.append(lista[14] + "向多播组" + lista[20] + "的查询")
+                    elif (lista[17] == '2203'):
+                        listdisplay.append(lista[14] + "申请离开多播组" + lista[20] + "(ICMPv3)")
+                    elif (lista[17] == '2204'):
+                        listdisplay.append(lista[14] + "申请加入多播组" + lista[20] + "(ICMPv3)")
+                    else:
+                        listdisplay.append("其他未知的IGMP操作类型：" + lista[17])
+                elif lista[12] == 'ICMP' and lista[17] != '分片包':
+                    listdisplay = [str(lista[i]) for i in [14, 15, 12]]
+                    listdisplay.append(lista[-1])  # 长度
+                    listdisplay.append(lista[-2][:11])  # 日期
+                    listdisplay.append(lista[-2][11:24])  # 时间
+                    listdisplay.append(lista[17] + ":" + lista[18])
+                elif lista[12] == 'ICMP' and lista[17] == '分片包':
+                    listdisplay = [str(lista[i]) for i in [14, 15, 12]]
+                    listdisplay.append(lista[-1])  # 长度
+                    listdisplay.append(lista[-2][:11])  # 日期
+                    listdisplay.append(lista[-2][11:24])  # 时间
+                    listdisplay.append('ICMP分片')
+                elif lista[12] == 'IPv6':
+                    listdisplay = [str(lista[i]) for i in [14, 15, 12]]
+                    listdisplay.append(lista[-1])  # 长度
+                    listdisplay.append(lista[-2][:11])  # 日期
+                    listdisplay.append(lista[-2][11:24])  # 时间
+                    listdisplay.append(lista[23] + '->' + lista[24])
+                else:
+                    listdisplay = ['无法识别', '', '']
+                    listdisplay.append(lista[-1])  # 长度
+                    listdisplay.append(lista[-2][:11])  # 日期
+                    listdisplay.append(lista[-2][11:24])  # 时间
+                    listdisplay.append('未识别的编号为' + lista[12] + "的传输层协议！")
+            else:
+                listdisplay = ['无法识别', '', '']
+                listdisplay.append(lista[-1])  # 长度
+                listdisplay.append(lista[-2][:11])  # 日期
+                listdisplay.append(lista[-2][11:24])  # 时间
+                listdisplay.append('未识别的编号为' + lista[2] + '的IP层协议！')
+        listdisplay.insert(0, str(Num))
+        return listdisplay
 
-    PktDataGBK = PktDataOrigin.encode("latin-1").decode("gbk", 'ignore')
-
-    conv = Ansi2HTMLConverter()
-    PktDataHtml = conv.convert(PktDataGBK)
-    PktDataHtml = str.replace(PktDataHtml, "\n</span>", "</span>")
-
-    ui.textBrowser_HEX.setText(PktDataHex)
-    ui.textBrowser_UTF8.setText(PktDataANSI)
-    ui.textBrowser_GBK.setText(PktDataGBK)
-    ui.textBrowser_ANSI.setText(PktDataOrigin)
-    ui.textBrowser_PRT.setHtml(PktDataHtml)
-    fp.close()
-
-
-
-
-#返回搜索
-def backsearch():
-    para.SearchFlag = 0
-    ui.treeWidget.clear()
-    ui.lineEdit.clear()
-    i = 0
-    for pkt in para.packet:
-        displaygui(list_to_display(pkt, i + 1), i)
-        i += 1
-
-#停止抓包
-def SniffStop():
-    para.ListenFlag = 0
-    para.Process.join()
-
-    print("抓包已停止，可以重新开始抓包")
-
-#分片重组显示
-def ReassembleShow(PktDataHex, PktDataANSI ,Count):
-    listHex = PktDataHex
-    listANSI = PktDataANSI
-    if Count < 1:
-        string_op = 'NULL'
-    else:
-        string_op = '当前字段由%d个包重组\n' % Count
+    # 右下角包内容展示
+    def ShowString(self, pktlist, pktindex):
+        listHex = pktlist[pktindex][-4]
+        listANSI = pktlist[pktindex][-3]
+        string_op = ''
         row = int(len(listANSI) / 16)
-        if len(listANSI) % 16 != 0: # 如果刚好整除则不需要加一排
+        if len(listANSI) % 16 != 0:  # 如果刚好整除则不需要加一排
             row += 1
         for i in range(row):
-            #得到0000，0010...
+            # 得到0000，0010...
             rowi = 16 * i
             title = hex(rowi)[2:]
             while len(title) < 4:
@@ -1170,47 +1298,374 @@ def ReassembleShow(PktDataHex, PktDataANSI ,Count):
                     string_op += listANSI[rowi:rowi + 8]
                     string_op += ' '
                     string_op += listANSI[rowi + 8:rowi + 16]
-    ui.textBrowser_HEX.setText(string_op)
+        self.textBrowser_String.setText(string_op)
 
-#右下角包内容展示
-def ShowString(pktlist, pktindex):
-    listHex = pktlist[pktindex][-4]
-    listANSI = pktlist[pktindex][-3]
-    string_op = ''
-    row = int(len(listANSI)/16)
-    if len(listANSI) % 16 != 0:  # 如果刚好整除则不需要加一排
-        row += 1
-    for i in range(row):
-        #得到0000，0010...
-        rowi = 16*i
-        title = hex(rowi)[2:]
-        while len(title) < 4:
-            title = '0' + title
-        string_op += (title+'  ')
-        if i != row-1:
-            string_op += listHex[3 * rowi:3 * (rowi + 8)]
-            string_op += ' '
-            string_op += listHex[3 * (rowi + 8):3 * (rowi + 16)]
-            string_op += '     '
-            string_op += listANSI[rowi:rowi + 8]
-            string_op += ' '
-            string_op += listANSI[rowi+8:rowi+16]
-            string_op += '\n'
+    # 追踪TCP数据流
+    def TCPDataFlow(self):
+        # 首先分析哪些相关包能够重组
+        ## Open the capture file
+        pkt_index = int(self.treeWidget.selectedItems()
+                        [0].text(0)) - 1  # 得到索引值
+        # 如果不是TCP协议的包就直接退
+        if (len(para.packet[pkt_index]) < 20 or para.packet[pkt_index][12] != "TCP"):
+            return
+
+        if para.SearchFlag == 0:
+            src_ip = para.packet[pkt_index][14]  # 源IP
+            dst_ip = para.packet[pkt_index][15]  # 目的IP
+            src_port = para.packet[pkt_index][17]  # 源端口
+            dst_port = para.packet[pkt_index][18]  # 目的端口
         else:
-            reminder = len(listANSI)-16*(row-1)
-            if reminder <= 8: 
-                string_op += listHex[3 * rowi:3 * (rowi + 8)]
-                string_op += ' ' * ((16 - reminder) * 3 + 6)
-                string_op += listANSI[rowi:rowi + 8]
-            else:
-                string_op += listHex[3 * rowi:3 * (rowi + 8)]
-                string_op += ' '
-                string_op += listHex[3 * (rowi + 8):3 * (rowi + 16)]
-                string_op += ' ' * ((16 - reminder) * 3 + 5)
-                string_op += listANSI[rowi:rowi + 8]
-                string_op += ' '
-                string_op += listANSI[rowi + 8:rowi + 16]
-    ui.textBrowser_String.setText(string_op)
+            src_ip = para.filterlist[pkt_index][14]  # 源IP
+            dst_ip = para.filterlist[pkt_index][15]  # 目的IP
+            src_port = para.filterlist[pkt_index][17]  # 源端口
+            dst_port = para.filterlist[pkt_index][18]  # 目的端口
+        PktDataHex = ""
+        PktLst = []
+        PktDataANSI = ""
+        PktDataOrigin = ""
+        count = 0
+        for packets in para.packet:
+            if (len(packets) < 20 or packets[12] != "TCP"):
+                pass
+            elif ((packets[14] == src_ip) and (packets[15] == dst_ip) and (packets[17] == src_port) and (
+                packets[18] == dst_port)):
+                count += 1
+                PktLst.append(
+                    (packets[-3], packets[-4], packets[-5], packets[19], packets[4] + packets[21]))
+                # 包数据[ANSI,Hex,源码(GBK),seq,偏移量]
+        PktLst = sorted(PktLst, key=lambda x: int(x[3]))
+        ##加工一下
+        fp = open("nxm", "wb")
+        for fragments in PktLst:
+            start = fragments[-1] * 4 + 14
+            PktDataANSI = PktDataANSI + fragments[0][start:]
+            PktDataHex = PktDataHex + fragments[1][4 * start:]
+            PktDataOrigin = PktDataOrigin + fragments[2][start:]
+            fp.write(bytes(fragments[2][start:], "latin-1"))
+
+        PktDataGBK = PktDataOrigin.encode("latin-1").decode("gbk", 'ignore')
+
+        conv = Ansi2HTMLConverter()
+        PktDataHtml = conv.convert(PktDataGBK)
+        PktDataHtml = str.replace(PktDataHtml, "\n</span>", "</span>")
+
+        self.textBrowser_HEX.setText(PktDataHex)
+        self.textBrowser_UTF8.setText(PktDataANSI)
+        self.textBrowser_GBK.setText(PktDataGBK)
+        self.textBrowser_ANSI.setText(PktDataOrigin)
+        self.textBrowser_PRT.setHtml(PktDataHtml)
+        fp.close()
+
+    # Ip分片重组
+    def resembleFragments(self):
+        # 首先分析哪些相关包能够重组
+        ## Open the capture file
+        pkt_index = int(ui.treeWidget.selectedItems()
+                        [0].text(0)) - 1  # 得到索引值
+
+        if para.SearchFlag == 0:
+            id = para.packet[pkt_index][7]  # 标识
+        else:
+            id = para.filterlist[pkt_index][7]
+        PktDataHex = ""
+        PktLst = []
+        PktDataANSI = ""
+        count = 0
+        for packets in para.packet:
+            if (len(packets) < 8):
+                pass
+            elif ((packets[2] == "IPv4") and (packets[7] == id)):
+                count += 1
+                PktLst.append((packets[-3], packets[-4],
+                               packets[10], packets[4]))
+        PktLst = sorted(PktLst, key=lambda x: int(x[2]))
+        ##加工一下
+        for fragments in PktLst:
+            # 考虑一下选项吧那就！
+            start = fragments[-1] * 4 + 14  # 首部长度是5，*4得到20个字节的IP头
+
+            PktDataANSI = PktDataANSI + fragments[0][start:]
+            PktDataHex = PktDataHex + fragments[1][3 * start:]
+            # PktDataGBK = PktDataANSI.encode("gbk")
+        self.ReassembleShow(PktDataHex, PktDataANSI, count)
+
+    def ReassembleShow(self ,PktDataHex, PktDataANSI, Count):
+        listHex = PktDataHex
+        listANSI = PktDataANSI
+        if Count < 1:
+            string_op = 'NULL'
+        else:
+            string_op = '当前字段由%d个包重组\n' % Count
+            row = int(len(listANSI) / 16)
+            if len(listANSI) % 16 != 0:  # 如果刚好整除则不需要加一排
+                row += 1
+            for i in range(row):
+                # 得到0000，0010...
+                rowi = 16 * i
+                title = hex(rowi)[2:]
+                while len(title) < 4:
+                    title = '0' + title
+                string_op += (title + '  ')
+                if i != row - 1:
+                    string_op += listHex[3 * rowi:3 * (rowi + 8)]
+                    string_op += ' '
+                    string_op += listHex[3 * (rowi + 8):3 * (rowi + 16)]
+                    string_op += '     '
+                    string_op += listANSI[rowi:rowi + 8]
+                    string_op += ' '
+                    string_op += listANSI[rowi + 8:rowi + 16]
+                    string_op += '\n'
+                else:
+                    reminder = len(listANSI) - 16 * (row - 1)
+                    if reminder <= 8:
+                        string_op += listHex[3 * rowi:3 * (rowi + 8)]
+                        string_op += ' ' * ((16 - reminder) * 3 + 6)
+                        string_op += listANSI[rowi:rowi + 8]
+                    else:
+                        string_op += listHex[3 * rowi:3 * (rowi + 8)]
+                        string_op += ' '
+                        string_op += listHex[3 * (rowi + 8):3 * (rowi + 16)]
+                        string_op += ' ' * ((16 - reminder) * 3 + 5)
+                        string_op += listANSI[rowi:rowi + 8]
+                        string_op += ' '
+                        string_op += listANSI[rowi + 8:rowi + 16]
+        ui.textBrowser_HEX.setText(string_op)
+
+    # 返回搜索
+    def backsearch(self):
+        para.SearchFlag = 0
+        self.treeWidget.clear()
+        self.lineEdit.clear()
+        i = 0
+        for pkt in para.packet:
+            self.displaygui(self.list_to_display(pkt, i + 1), i)
+            i += 1
+
+        # 抓包过滤函数，这个函数要在运行抓包指令开始之前跑一遍
+    def PacketFilter(self , filter):
+        fcode = bpf_program()
+        netmask = 0xffffff
+        # filter = "tcp"
+        ## compile the filter
+        if pcap_compile(para.fp, byref(fcode), filter.encode("utf-8"), 1, netmask) < 0:
+            pcap_close(para.fp)
+            sys.exit(-3)
+
+        ## set the filter
+
+        if pcap_setfilter(para.fp, byref(fcode)) < 0:
+            pcap_close(para.fp)
+            sys.exit(-4)
+
+        # 搜索过滤函数
+    def Filter(self, filter):
+        MACaddr = re.compile(r'([A-Fa-f0-9]{2}-){5}[A-Fa-f0-9]{2}')
+        IPaddr = re.compile(
+            r'^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)')
+        search_field = self.lineEdit.text().lower()  # 得到搜索字段的小写
+        filterlist = para.filterlist = []
+        if search_field != '':
+            para.SearchFlag = 1  # 显示搜索列表
+            para.ListenFlag = 0  # 停止抓包
+        if search_field in ['tcp', 'udp', 'icmp', 'igmp', 'ipv6', 'arp', 'rarp', 'icmpv6']:
+            protocol = search_field  # 则搜索为协议
+            if protocol == 'tcp':
+                self.treeWidget.clear()
+                for pkt in para.packet:
+                    try:
+                        if pkt[12] == "TCP":
+                            filterlist.append(pkt)
+                    except:
+                        pass
+                total = len(filterlist)
+                for i in range(total):
+                    self.displaygui(self.list_to_display(filterlist[i], i + 1), i)
+
+            elif protocol == 'udp':
+                self.treeWidget.clear()
+                for pkt in para.packet:
+                    try:
+                        if pkt[12] == "UDP":
+                            filterlist.append(pkt)
+                    except:
+                        pass
+                total = len(filterlist)
+                for i in range(total):
+                    self.displaygui(self.list_to_display(filterlist[i], i + 1), i)
+
+            elif protocol == 'icmp':
+                self.treeWidget.clear()
+                for pkt in para.packet:
+                    try:
+                        if pkt[12] =="ICMP":
+                            filterlist.append(pkt)
+                    except:
+                        pass
+                total = len(filterlist)
+                for i in range(total):
+                    self.displaygui(self.list_to_display(filterlist[i], i + 1), i)
+
+            elif protocol == 'igmp':
+                self.treeWidget.clear()
+                for pkt in para.packet:
+                    try:
+                        if pkt[12] == "IGMP":
+                            filterlist.append(pkt)
+                    except:
+                        pass
+                total = len(filterlist)
+                for i in range(total):
+                    self.displaygui(self.list_to_display(filterlist[i], i + 1), i)
+
+            elif protocol == 'ipv6':
+                self.treeWidget.clear()
+                for pkt in para.packet:
+                    if pkt[2] == 'IPv6':
+                        filterlist.append(pkt)
+                total = len(filterlist)
+                for i in range(total):
+                    self.displaygui(self.list_to_display(filterlist[i], i + 1), i)
+            elif protocol == 'icmpv6':
+                self.treeWidget.clear()
+                for pkt in para.packet:
+                    try:
+                        if pkt[11] == 'ICMPv6':
+                            filterlist.append(pkt)
+                    except:
+                        pass
+                total = len(filterlist)
+                for i in range(total):
+                    self.displaygui(self.list_to_display(filterlist[i], i + 1), i)
+
+            elif protocol == 'arp':
+                self.treeWidget.clear()
+                for pkt in para.packet:
+                    if pkt[2] == 'ARP':
+                        filterlist.append(pkt)
+                total = len(filterlist)
+                for i in range(total):
+                    self.displaygui(self.list_to_display(filterlist[i], i + 1), i)
+
+            elif protocol == 'rarp':
+                self.treeWidget.clear()
+                for pkt in para.packet:
+                    if pkt[2] == 'PARP':
+                        filterlist.append(pkt)
+                total = len(filterlist)
+                for i in range(total):
+                    self.displaygui(self.list_to_display(filterlist[i], i + 1), i)
+
+        # 输入为空，可以返回原始列表（全部包显示）
+        elif search_field in ['ftp', 'http', 'tls', 'telnet', 'oicq']:
+            protocol = search_field  # 则搜索为协议
+            if protocol == 'ftp':
+                self.treeWidget.clear()
+                for pkt in para.packet:
+                    try:
+                        if pkt[17] == 21:
+                            filterlist.append(pkt)
+                    except:
+                        pass
+                total = len(filterlist)
+                for i in range(total):
+                    self.displaygui(self.list_to_display(filterlist[i], i + 1), i)
+
+            elif protocol == 'http':
+                self.treeWidget.clear()
+                for pkt in para.packet:
+                    try:
+                        if pkt[17] == 80 or pkt[18] == 80:
+                            filterlist.append(pkt)
+                    except:
+                        pass
+                total = len(filterlist)
+                for i in range(total):
+                    self.displaygui(self.list_to_display(filterlist[i], i + 1), i)
+
+            elif protocol == 'tls':
+                self.treeWidget.clear()
+                for pkt in para.packet:
+                    try:
+                        if pkt[17] == 443:
+                            filterlist.append(pkt)
+                    except:
+                        pass
+                total = len(filterlist)
+                for i in range(total):
+                    self.displaygui(self.list_to_display(filterlist[i], i + 1), i)
+
+            elif protocol == 'telnet':
+                self.treeWidget.clear()
+                for pkt in para.packet:
+                    try:
+                        if pkt[17] == 23 or pkt[18] == 23:
+                            filterlist.append(pkt)
+                    except:
+                        pass
+                total = len(filterlist)
+                for i in range(total):
+                    self.displaygui(self.list_to_display(filterlist[i], i + 1), i)
+            else: #oicq
+                self.treeWidget.clear()
+                for pkt in para.packet:
+                    try:
+                        if pkt[17] == 8000 or pkt[17] == 4000 or pkt[18] == 4000 or pkt[18] == 8000:
+                            filterlist.append(pkt)
+                    except:
+                        pass
+                total = len(filterlist)
+                for i in range(total):
+                    self.displaygui(self.list_to_display(filterlist[i], i + 1), i)
+
+        elif search_field == '':
+            self.treeWidget.clear()
+            i = 0
+            for pkt in para.packet:
+                self.displaygui(self.list_to_display(pkt, i + 1), i)
+                i += 1
+        elif re.match(MACaddr, search_field):  # 若输入为mac地址格式
+            self.treeWidget.clear()
+            for pkt in para.packet:
+                if search_field in pkt[0] or search_field in pkt[1]:
+                    filterlist.append(pkt)
+            total = len(filterlist)
+            for i in range(total):
+                self.displaygui(self.list_to_display(filterlist[i], i + 1), i)
+
+
+        elif re.match(IPaddr, search_field):  # 若输入为ip地址格式
+            self.treeWidget.clear()
+            for pkt in para.packet:
+                if pkt[2] in ['ARP', 'RARP']:
+                    if search_field in [pkt[9], pkt[11]]:
+                        filterlist.append(pkt)
+                elif pkt[2] == 'IPv6':
+                    if search_field in [pkt[9], pkt[10]]:
+                        filterlist.append(pkt)
+                else:
+                    if len(pkt) > 12:
+                        if search_field in [pkt[14], pkt[15]]:
+                            filterlist.append(pkt)
+                    else:
+                        pass
+            total = len(filterlist)
+            for i in range(total):
+                self.displaygui(self.list_to_display(filterlist[i], i + 1), i)
+        else:
+            self.treeWidget.clear()
+            for pkt in para.packet:
+                if search_field in pkt[-3].lower():
+                    filterlist.append(pkt)
+            total = len(filterlist)
+            for i in range(total):
+                self.displaygui(self.list_to_display(filterlist[i], i + 1), i)
+
+#第二窗口注释
+
+
+#分片重组显示
+
 
 #选择网卡
 def ChangeIface(): # 选定网卡
@@ -1223,411 +1678,65 @@ def ChangeIface(): # 选定网卡
     #pcap_setbuff(para.fp,65536)
     para.DUMPFILE = pcap_dump_open(para.fp, "temp".encode("utf-8"))
 
-#显示上方窗口内容
-def list_to_display(lista,Num):  # 显示上面窗口的src，dst，prt，len等
-    listdisplay = []
-    if lista[2] in ['ARP','RARP']:
-        listdisplay = [str(lista[i]) for i in [9, 11, 2]]
-        listdisplay.append(lista[-1])  # 长度
-        listdisplay.append(lista[-2][:11]) # 日期
-        listdisplay.append(lista[-2][11:24])  # 时间
-        if lista[7] == "RARP请求":
-            listdisplay.append("我是" + lista[8] + "，请分配给我一个IP地址！")
-        elif lista[7] == "RARP应答":
-            listdisplay.append("亲爱的" + lista[10] + "你好！你的IP地址是" + lista[11])
-        elif lista[7] == "ARP请求":
-            listdisplay.append("谁是" + lista[11] + "？请站出来告诉" + lista[9])
-        elif lista[7] == "ARP回显":
-            listdisplay.append("我是" + lista[9] + "，我的MAC是" + lista[8])
+class Catching(QThread):
+    sinOut = pyqtSignal(list)
+    def __init__(self ,parent = None):
+        super(Catching, self).__init__(parent)
+        self.stoped = False
+        self.mutex = QMutex()
 
-    elif lista[2] == 'IPv6':
-        if lista[11] == 'ICMPv6':
-            listdisplay = [str(lista[i]) for i in [9, 10, 11]]
-            listdisplay.append(lista[-1])  # 长度
-            listdisplay.append(lista[-2][:11])  # 日期
-            listdisplay.append(lista[-2][11:24])  # 时间
-            listdisplay.append("ICMPv6"+ lista[12])
-        else:
-            listdisplay = [str(lista[i]) for i in [9, 10, 2]]
-            listdisplay.append(lista[-1])  # 长度
-            listdisplay.append(lista[-2][:11])  # 日期
-            listdisplay.append(lista[-2][11:24])  # 时间
-            listdisplay.append(lista[9] + "->" + lista[10])
-    #以下为ipv4族
-    else:
-        if len(lista)>12:
-            if lista[12] == 'UDP':
-                listdisplay = [str(lista[i]) for i in [14, 15]]
-                if (lista[17] == 8000 or lista[17] == 4000 or lista[18] == 4000 or lista[18] == 8000):
-                    listdisplay.append("OICQ")
-                    listdisplay.append(lista[-1])  # 长度
-                    listdisplay.append(lista[-2][:11])  # 日期
-                    listdisplay.append(lista[-2][11:24])  # 时间
-                    listdisplay.append("OICQ数据..(UDP)")
-                else :
-                    listdisplay.append(lista[12])
-                    listdisplay.append(lista[-1])  # 长度
-                    listdisplay.append(lista[-2][:11])  # 日期
-                    listdisplay.append(lista[-2][11:24])  # 时间
-                    listdisplay.append(lista[14] +":"+str(lista[17])+"->"+lista[15]+":"+str(lista[18]))
-            elif lista[12] == 'TCP':
-                listdisplay = [str(lista[i]) for i in [14, 15]]
-                if (lista[17] == 23 or lista[18] == 23):
-                    listdisplay.append("TELNET")
-                    listdisplay.append(lista[-1])  # 长度
-                    listdisplay.append(lista[-2][:11])  # 日期
-                    listdisplay.append(lista[-2][11:24])  # 时间
-                    listdisplay.append("Telnet数据..")
-                elif (lista[17] == 80 or lista[18] == 80):
-                    listdisplay.append("HTTP")
-                    listdisplay.append(lista[-1])  # 长度
-                    listdisplay.append(lista[-2][:11])  # 日期
-                    listdisplay.append(lista[-2][11:24])  # 时间
-                    st = (lista[4]+lista[21]) * 4 + 14
-                    try:
-                        index = str.index(lista[-3][st:-1], "HTTP/1.1") + st
-                        end = str.index(lista[-3][index:-1] , "..") + index
-                        a = lista[-3][st:end]
-                        listdisplay.append(a)
-                    except:
-                        listdisplay.append("HTTP协议..")
-                elif (lista[17] == 21):
-                    listdisplay.append("FTP")
-                    listdisplay.append(lista[-1])  # 长度
-                    listdisplay.append(lista[-2][:11])  # 日期
-                    listdisplay.append(lista[-2][11:24])  # 时间
-                    st = (lista[4] + lista[21]) * 4 + 14
-                    listdisplay.append(lista[-3][st:-1][:50])
-                elif (lista[17] == 443):
-                    listdisplay.append("TLS")
-                    listdisplay.append(lista[-1])  # 长度
-                    listdisplay.append(lista[-2][:11])  # 日期
-                    listdisplay.append(lista[-2][11:24])  # 时间
-                    listdisplay.append("应用数据..")
-                elif (lista[17] == 8000 or lista[17] == 4000 or lista[17] == 4000 or lista[17] == 8000):
-                    listdisplay.append("OICQ")
-                    listdisplay.append(lista[-1])  # 长度
-                    listdisplay.append(lista[-2][:11])  # 日期
-                    listdisplay.append(lista[-2][11:24])  # 时间
-                    listdisplay.append("OICQ数据..(TCP)")
-                else:
-                    listdisplay.append("TCP")
-                    listdisplay.append(lista[-1])  # 长度
-                    listdisplay.append(lista[-2][:11])  # 日期
-                    listdisplay.append(lista[-2][11:24])  # 时间
-                    a = "["
-                    if lista[23]==1:
-                        a += "URG "
-                    if lista[24] == 1:
-                        a += "ACK "
-                    if lista[25] == 1:
-                        a += "PSH "
-                    if lista[26] == 1:
-                        a += "RST "
-                    if lista[27] == 1:
-                        a += "SYN "
-                    if lista[28] == 1:
-                        a += "FIN "
-                    if a!="[":
-                        a = a[0:-1] + "] "
-                    else:
-                        a = " "
-                    listdisplay.append(a + str(lista[17]) + "->" + str(lista[18]) + "   Seq=" + str(lista[19]) + "  Ack=" + str(lista[20]))
-            elif lista[12]  =='IGMP':
-                listdisplay = [str(lista[i]) for i in [14, 15, 12]]
-                listdisplay.append(lista[-1])  # 长度
-                listdisplay.append(lista[-2][:11])  # 日期
-                listdisplay.append(lista[-2][11:24])  # 时间
-                if (lista[17] == '16'):
-                    listdisplay.append(lista[14] + "申请加入多播组" + lista[20] + "（组成员报告，IGMPv2）")
-                elif (lista[17] == '12'):
-                    listdisplay.append(lista[14] + "申请加入多播组" + lista[20] + "（组成员报告，IGMPv1）")
-                elif (lista[17] == '17'):
-                    listdisplay.append(lista[14] + "离开多播组" + lista[20])
-                elif (lista[17] == '11'):
-                    listdisplay.append(lista[14] + "向多播组"+ lista[20] + "的查询")
-                elif (lista[17] == '2203'):
-                    listdisplay.append(lista[14] + "申请离开多播组" + lista[20] + "(ICMPv3)")
-                elif (lista[17] == '2204'):
-                    listdisplay.append(lista[14] + "申请加入多播组" + lista[20] + "(ICMPv3)")
-                else:
-                    listdisplay.append("其他未知的IGMP操作类型：" + lista[17])
-            elif lista[12] == 'ICMP' and lista[17]!= '分片包':
-                listdisplay = [str(lista[i]) for i in [14, 15, 12]]
-                listdisplay.append(lista[-1])  # 长度
-                listdisplay.append(lista[-2][:11])  # 日期
-                listdisplay.append(lista[-2][11:24])  # 时间
-                listdisplay.append(lista[17] + ":" + lista[18])
-            elif lista[12] == 'ICMP' and lista[17]== '分片包':
-                listdisplay = [str(lista[i]) for i in [14, 15, 12]]
-                listdisplay.append(lista[-1])  # 长度
-                listdisplay.append(lista[-2][:11])  # 日期
-                listdisplay.append(lista[-2][11:24])  # 时间
-                listdisplay.append('ICMP分片')
-            elif lista[12] == 'IPv6':
-                listdisplay = [str(lista[i]) for i in [14, 15, 12]]
-                listdisplay.append(lista[-1])  # 长度
-                listdisplay.append(lista[-2][:11])  # 日期
-                listdisplay.append(lista[-2][11:24])  # 时间
-                listdisplay.append(lista[23] + '->' + lista[24])
-            else :
-                listdisplay = ['无法识别', '', '']
-                listdisplay.append(lista[-1])  # 长度
-                listdisplay.append(lista[-2][:11])  # 日期
-                listdisplay.append(lista[-2][11:24])  # 时间
-                listdisplay.append('未识别的编号为' + lista[12] + "的传输层协议！")
-        else:
-            listdisplay = ['无法识别','','']
-            listdisplay.append(lista[-1])  # 长度
-            listdisplay.append(lista[-2][:11])  # 日期
-            listdisplay.append(lista[-2][11:24])  # 时间
-            listdisplay.append('未识别的编号为'+ lista[2] + '的IP层协议！')
-
-    listdisplay.insert(0, str(Num))
-    return listdisplay
-
-#抓包线程
-def threadlisten(): #开启一个线程抓包
-    #global Process
-    para.Process = threading.Thread(target=ListenDevice)
-    if para.ListenFlag == 1:
-        para.Process.start()
-    else:
-        para.reinitial()
-        ChangeIface()
-        ui.treeWidget.clear()
-        para.ListenFlag = 1
-        para.Process.start()
-
-
-#抓包函数
-def ListenDevice():
-    para.RANK = 0
-    while para.ListenFlag:
-        res = pcap_next_ex(para.fp, byref(para.header), byref(para.pkt_data))
-        while (res >= 0) and para.ListenFlag:
-            if (res == 0):
-                ## 超时
-                break
-            time1 = str(time.strftime("%Y-%m-%d %H:%M:%S.",time.localtime(para.header.contents.ts.tv_sec))) + str("%d" %(para.header.contents.ts.tv_usec))
-            length = str("%ld" %(para.header.contents.len))
-            #for i in range(para.header.contents.len):
-
-            para.showpacket = etherPacketLoop(para.pkt_data, para.header.contents.len)
-            para.showpacket.append(time1)  # 加一个时间，年月日秒
-            para.showpacket.append(length) # 加一个总帧长
-            para.packet.append(para.showpacket)
-            #packet为格式化的包
-            #下一步来个显示函数
-            displaygui(list_to_display(para.showpacket, para.RANK+1), para.RANK)
-            para.RANK += 1
-            #将包内容填到缓存里
-            pcap_dump(para.DUMPFILE, para.header, para.pkt_data)
+    def run(self):
+        with QMutexLocker(self.mutex):
+            self.stoped = False
+        para.RANK = 0
+        while para.ListenFlag:
             res = pcap_next_ex(para.fp, byref(para.header), byref(para.pkt_data))
-        if (res == -1):
-            sys.exit(-1)
-    pcap_dump_close(para.DUMPFILE)
-    pcap_close(para.fp)
-    sys.exit(-1)
-
-def displaygui(showlist, rank):
-    gui_object = ui
-    Treeitem = QtWidgets.QTreeWidgetItem(gui_object.treeWidget)
-    item_num = 0
-    # 根据协议分颜色
-    if showlist[3] == 'TCP':
-        brush = QtGui.QBrush(QtGui.QColor(141, 211, 199))
-        brush.setStyle(QtCore.Qt.SolidPattern)
-    elif showlist[3] == 'UDP':
-        brush = QtGui.QBrush(QtGui.QColor(255, 255, 179))  
-        brush.setStyle(QtCore.Qt.SolidPattern)
-    elif showlist[3] in ['ARP','RARP']:
-        brush = QtGui.QBrush(QtGui.QColor(190,186,218))
-        brush.setStyle(QtCore.Qt.SolidPattern)
-    elif showlist[3] in ['IPv6','ICMPv6']:
-        brush = QtGui.QBrush(QtGui.QColor(251, 128, 114))  
-        brush.setStyle(QtCore.Qt.SolidPattern)
-    elif showlist[3] == 'ICMP':
-        brush = QtGui.QBrush(QtGui.QColor(128, 177, 211))  
-        brush.setStyle(QtCore.Qt.SolidPattern)
-    elif showlist[3] == 'IGMP':
-        brush = QtGui.QBrush(QtGui.QColor(253, 180, 98))  
-        brush.setStyle(QtCore.Qt.SolidPattern)
-    elif showlist[3] == 'HTTP':
-        brush = QtGui.QBrush(QtGui.QColor(179, 222, 105))  
-        brush.setStyle(QtCore.Qt.SolidPattern)
-    elif showlist[3] == 'FTP':
-        brush = QtGui.QBrush(QtGui.QColor(252, 205, 229))  
-        brush.setStyle(QtCore.Qt.SolidPattern)
-    elif showlist[3] == 'TLS':
-        brush = QtGui.QBrush(QtGui.QColor(255,237,111))  
-        brush.setStyle(QtCore.Qt.SolidPattern)
-    elif showlist[3] == 'TELNET':
-        brush = QtGui.QBrush(QtGui.QColor(188, 128, 189))  
-        brush.setStyle(QtCore.Qt.SolidPattern)
-    elif showlist[3] == 'OICQ':
-        brush = QtGui.QBrush(QtGui.QColor(204,235,197))
-        brush.setStyle(QtCore.Qt.SolidPattern)
-    else:
-        brush = QtGui.QBrush(QtGui.QColor(251, 180, 174))
-        brush.setStyle(QtCore.Qt.SolidPattern)
-
-    for item in showlist:
-        gui_object.treeWidget.topLevelItem(rank).setText(
-            item_num, QtCore.QCoreApplication.translate("SnifferGUI", item))
-        gui_object.treeWidget.topLevelItem(rank).setBackground(item_num,brush)
-        item_num += 1
-
-#搜索过滤函数
-def Filter(filter):
-    MACaddr = re.compile(r'([A-Fa-f0-9]{2}-){5}[A-Fa-f0-9]{2}')
-    IPaddr = re.compile(
-        r'^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)')
-    gui_object = ui
-    search_field = ui.lineEdit.text().lower()  # 得到搜索字段的小写
-    filterlist = para.filterlist = []
-    if search_field != '':
-        para.SearchFlag = 1 # 显示搜索列表
-        para.ListenFlag = 0 # 停止抓包
-    if search_field in ['tcp', 'udp', 'icmp', 'igmp', 'ipv6', 'arp', 'rarp', 'icmpv6']:
-        protocol = search_field  # 则搜索为协议
-        if protocol == 'tcp':
-            ui.treeWidget.clear()
-            for pkt in para.packet:
-                if len(pkt) == 36:
-                    filterlist.append(pkt)
-            total = len(filterlist)
-            for i in range(total):
-                displaygui(list_to_display(filterlist[i], i + 1), i)
-
-        elif protocol == 'udp':
-            ui.treeWidget.clear()
-            for pkt in para.packet:
-                if len(pkt) == 25:
-                    filterlist.append(pkt)
-            total = len(filterlist)
-            for i in range(total):
-                displaygui(list_to_display(filterlist[i], i + 1), i)
-
-        elif protocol == 'icmp':
-            ui.treeWidget.clear()
-            for pkt in para.packet:
-                if len(pkt) == 26:
-                    filterlist.append(pkt)
-            total = len(filterlist)
-            for i in range(total):
-                displaygui(list_to_display(filterlist[i], i + 1), i)
-
-        elif protocol == 'igmp':
-            ui.treeWidget.clear()
-            for pkt in para.packet:
-                if len(pkt) == 23:
-                    filterlist.append(pkt)
-            total = len(filterlist)
-            for i in range(total):
-                displaygui(list_to_display(filterlist[i], i + 1), i)
-
-        elif protocol == 'ipv6':
-            ui.treeWidget.clear()
-            for pkt in para.packet:
-                if pkt[2] == 'IPv6':
-                    filterlist.append(pkt)
-            total = len(filterlist)
-            for i in range(total):
-                displaygui(list_to_display(filterlist[i], i + 1), i)
-        
-        elif protocol == 'icmpv6':
-            ui.treeWidget.clear()
-            for pkt in para.packet:
-                if pkt[11] == 'ICMPv6':
-                    filterlist.append(pkt)
-            total = len(filterlist)
-            for i in range(total):
-                displaygui(list_to_display(filterlist[i], i + 1), i)
-
-        elif protocol == 'arp':
-            ui.treeWidget.clear()
-            for pkt in para.packet:
-                if pkt[2] == 'ARP':
-                    filterlist.append(pkt)
-            total = len(filterlist)
-            for i in range(total):
-                displaygui(list_to_display(filterlist[i], i + 1), i)
-
-        elif protocol == 'rarp':
-            ui.treeWidget.clear()
-            for pkt in para.packet:
-                if pkt[2] == 'PARP':
-                    filterlist.append(pkt)
-            total = len(filterlist)
-            for i in range(total):
-                displaygui(list_to_display(filterlist[i], i + 1), i)
-
-    #输入为空，可以返回原始列表（全部包显示）
-    elif search_field == '':
-        ui.treeWidget.clear()
-        i = 0
-        for pkt in para.packet:
-            displaygui(list_to_display(pkt, i + 1), i)
-            i += 1
-    elif re.match(MACaddr, search_field):  # 若输入为mac地址格式
-        ui.treeWidget.clear()
-        for pkt in para.packet:
-            if search_field in pkt[0] or search_field in pkt[1]:
-                filterlist.append(pkt)
-        total = len(filterlist)
-        for i in range(total):
-            displaygui(list_to_display(filterlist[i], i + 1), i)
-
-
-    elif re.match(IPaddr, search_field):  # 若输入为ip地址格式
-        ui.treeWidget.clear()
-        for pkt in para.packet:
-            if pkt[2] in ['ARP', 'RARP']:
-                if search_field in [pkt[9], pkt[11]]:
-                    filterlist.append(pkt)
-            elif pkt[2] == 'IPv6':
-                if search_field in [pkt[9], pkt[10]]:
-                    filterlist.append(pkt)
-            else:
-                if len(pkt) > 12:
-                    if search_field in [pkt[14], pkt[15]]:
-                        filterlist.append(pkt)
-                else:
-                    pass
-        total = len(filterlist)
-        for i in range(total):
-            displaygui(list_to_display(filterlist[i], i + 1), i)
-    else:
-        ui.treeWidget.clear()
-        for pkt in para.packet:
-            if search_field in pkt[-3].lower():
-                filterlist.append(pkt)
-        total = len(filterlist)
-        for i in range(total):
-            displaygui(list_to_display(filterlist[i], i + 1), i)
-
-
-#抓包过滤函数，这个函数要在运行抓包指令开始之前跑一遍
-def PacketFilter(filter):
-    fcode = bpf_program()
-    netmask = 0xffffff
-    #filter = "tcp"
-    ## compile the filter
-    if pcap_compile(para.fp, byref(fcode), filter.encode("utf-8"), 1, netmask) < 0:
+            while (res >= 0) and para.ListenFlag:
+                if (res == 0):
+                    ## 超时
+                    break
+                time1 = str(time.strftime("%Y-%m-%d %H:%M:%S.", time.localtime(para.header.contents.ts.tv_sec))) + str(
+                    "%d" % (para.header.contents.ts.tv_usec))
+                length = str("%ld" % (para.header.contents.len))
+                # for i in range(para.header.contents.len):
+                a = [[]]
+                for i in range(para.header.contents.len):
+                    a[0].append(para.pkt_data[i])
+                #para.showpacket = etherPacketLoop(para.pkt_data, para.header.contents.len)
+                #para.showpacket.append(time1)  # 加一个时间，年月日秒
+                #para.showpacket.append(length)  # 加一个总帧长
+                a.append(time1)
+                a.append(length)
+                #para.packet.append(para.showpacket)
+                # packet为格式化的包
+                # 下一步来个显示函数
+                #self.sinOut.emit("aa")
+                self.sinOut.emit(a)
+                #displaygui(list_to_display(para.showpacket, para.RANK + 1), para.RANK)
+                # 将包内容填到缓存里
+                pcap_dump(para.DUMPFILE, para.header, para.pkt_data)
+                res = pcap_next_ex(para.fp, byref(para.header), byref(para.pkt_data))
+            if (res == -1):
+                sys.exit(-1)
+        pcap_dump_close(para.DUMPFILE)
         pcap_close(para.fp)
-        sys.exit(-3)
+        while True:
+            if self.stoped:
+                return
 
-    ## set the filter
+    def stop(self):
+        with QMutexLocker(self.mutex):
+            self.stoped = True
+#抓包函数
 
-    if pcap_setfilter(para.fp, byref(fcode)) < 0:
-        pcap_close(para.fp)
-        sys.exit(-4)
+
+
+
 
 def MainWindows():
     global ui
     #para.queue = multiprocessing.Queue()
-    para.Process = threading.Thread(target=ListenDevice)#,name = "抓包" ,args=(para.queue,))
+    #para.Process = threading.Thread(target=ListenDevice)#,name = "抓包" ,args=(para.queue,))
     app = QtWidgets.QApplication(sys.argv)
     w = QtWidgets.QMainWindow()
     SecWin = Ui_Dialog()
@@ -1636,7 +1745,6 @@ def MainWindows():
     ui.commandLinkButton.clicked.connect(SecWin.handle_click) # 点commandLinkButton弹出第二个窗口；
     w.show()
     sys.exit(app.exec_())
-    #Process.join()
 
 #主函数
 def main():

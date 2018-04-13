@@ -8,3 +8,4 @@ nxm
 *.json
 *.sqlite
 .vs/Sniffer/v15/.suo
+main.spec
