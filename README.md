@@ -32,21 +32,28 @@ IS301 Computer Communication and Network Project
 
 ## Features
 
-- Sniffing and Filter searching
+### Sniffing & Searching
 
-![demo1](https://raw.githubusercontent.com/HaoPeiwen/Sniffer/master/demo1.gif)
+![](https://raw.githubusercontent.com/HaoPeiwen/Sniffer/master/demo1.gif)
 
-- Packets filter and Reassembly
+### Packets Filter & IP Packets Reassembly
 
-![demo2](https://raw.githubusercontent.com/HaoPeiwen/Sniffer/master/demo2.gif)
+![](https://raw.githubusercontent.com/HaoPeiwen/Sniffer/master/demo2.gif)
 
-- Formatted display
+### Tracing TCP Stream
+
+Reassembly TCP stream files and open it (as named `nxm`). Let's capture a FTP transfer file:
+![](https://raw.githubusercontent.com/HaoPeiwen/Sniffer/master/demo4.png)
+![](https://raw.githubusercontent.com/HaoPeiwen/Sniffer/master/demo5.png)
+
+
+### Formatted Display
   
-Telnet *bbs.sjtu.edu.cn* as example
+Telnet *bbs.sjtu.edu.cn* as example, after tracing TCP stream, we can get <ASCII> code and formatted display as you can see:
 
-![demo3](https://raw.githubusercontent.com/HaoPeiwen/Sniffer/master/demo3.gif)
+![](https://raw.githubusercontent.com/HaoPeiwen/Sniffer/master/demo3.gif)
 
-- Save `*.pcap` files
-- Reassembly FTP transfer files and open it (as named `num`)
+### Saving Capture Log
+Click *保存* to save `*.pcap` file
 
 ## To be continue...
