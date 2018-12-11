@@ -6,7 +6,7 @@ IS301 Computer Communication and Network Project
 
 计算机通信网大作业 - 网络抓包器
 
-*作者 - Evander & Xynnn_*
+*作者 - [Evander](https://github.com/HaoPeiwen) & [Xynnn_*](https://github.com/Xynnn007)
 
 ## Getting Startted
 ### Prerequisites
