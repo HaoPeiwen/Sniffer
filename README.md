@@ -42,18 +42,22 @@ IS301 Computer Communication and Network Project
 
 ### Tracing TCP Stream
 
-Reassembly TCP stream files and open it (as named `nxm`). Let's capture a FTP transfer file:
+You can reassemble TCP stream packets and open it which is generated as file `nxm` automacitally in the current path. 
+
+Let's capture a FTP transfer file:
+
 ![](https://raw.githubusercontent.com/HaoPeiwen/Sniffer/master/demo4.png)
 ![](https://raw.githubusercontent.com/HaoPeiwen/Sniffer/master/demo5.png)
 
 
 ### Formatted Display
   
-Telnet *bbs.sjtu.edu.cn* as example, after tracing TCP stream, we can get <ASCII> code and formatted display as you can see:
+Telnet *bbs.sjtu.edu.cn* as example, after tracing TCP stream, we got <ASCII> code and formatted display as you can see:
 
 ![](https://raw.githubusercontent.com/HaoPeiwen/Sniffer/master/demo3.gif)
 
 ### Saving Capture Log
-Click *保存* to save `*.pcap` file
+Click "保存" to save a file named `*.pcap` whereby you make further analysis through [*Wireshark*](https://www.wireshark.org/).
 
-## To be continue...
+## To be continue
+Want to see something else added? [Open an issue.](https://github.com/HaoPeiwen/Sniffer/issues/new)
